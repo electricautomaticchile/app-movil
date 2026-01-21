@@ -1,0 +1,21 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+
+# Flutter web
+web/flutter_service_worker.js
+web/flutter.js
+web/flutter_bootstrap.js
+web/flutter_build/
+web/.last_build_id
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
