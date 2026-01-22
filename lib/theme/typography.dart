@@ -4,111 +4,99 @@ import 'package:flutter/material.dart';
 import 'colors.dart';
 
 class AppTypography {
-  // Font family (using system default, can be changed to Google Fonts)
-  static const String fontFamily = 'Roboto';
-
-  // Font weights
-  static const FontWeight light = FontWeight.w300;
-  static const FontWeight regular = FontWeight.w400;
-  static const FontWeight medium = FontWeight.w500;
-  static const FontWeight semiBold = FontWeight.w600;
-  static const FontWeight bold = FontWeight.w700;
-
-  // Light theme text styles
-  static TextStyle h1Light = const TextStyle(
-    fontSize: 28,
-    fontWeight: bold,
-    color: AppColors.textPrimaryLight,
+  // Headings
+  static const TextStyle h1 = TextStyle(
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: AppColors.foreground,
     height: 1.2,
-    letterSpacing: -0.5,
   );
 
-  static TextStyle h2Light = const TextStyle(
-    fontSize: 24,
-    fontWeight: bold,
-    color: AppColors.textPrimaryLight,
-    height: 1.3,
-    letterSpacing: -0.3,
-  );
-
-  static TextStyle h3Light = const TextStyle(
+  static const TextStyle h2 = TextStyle(
     fontSize: 20,
-    fontWeight: semiBold,
-    color: AppColors.textPrimaryLight,
+    fontWeight: FontWeight.bold,
+    color: AppColors.foreground,
+    height: 1.2,
+  );
+
+  static const TextStyle h3 = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    color: AppColors.foreground,
     height: 1.4,
   );
 
-  static TextStyle bodyLargeLight = const TextStyle(
+  // Body text
+  static const TextStyle bodyLarge = TextStyle(
     fontSize: 16,
-    fontWeight: regular,
-    color: AppColors.textPrimaryLight,
+    fontWeight: FontWeight.normal,
+    color: AppColors.foreground,
     height: 1.5,
   );
 
-  static TextStyle bodyLight = const TextStyle(
+  static const TextStyle body = TextStyle(
     fontSize: 14,
-    fontWeight: regular,
-    color: AppColors.textSecondaryLight,
+    fontWeight: FontWeight.normal,
+    color: AppColors.foreground,
     height: 1.5,
   );
 
-  static TextStyle bodySmallLight = const TextStyle(
+  static const TextStyle bodySmall = TextStyle(
     fontSize: 12,
-    fontWeight: regular,
-    color: AppColors.textTertiaryLight,
+    fontWeight: FontWeight.normal,
+    color: AppColors.mutedForeground,
     height: 1.4,
   );
 
-  static TextStyle buttonLight = const TextStyle(
+  // Special styles
+  static const TextStyle label = TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w500,
+    color: AppColors.mutedForeground,
+    letterSpacing: 0.5,
+  );
+
+  static const TextStyle link = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.primary,
+  );
+
+  // Dark theme variants (for login/landing screens)
+  static const TextStyle h1Dark = h1;
+  static const TextStyle h1Light = h1;
+
+  static const TextStyle h2Dark = h2;
+  static const TextStyle h2Light = h2;
+
+  static const TextStyle h3Dark = h3;
+  static const TextStyle h3Light = h3;
+
+  static const TextStyle bodyDark = body;
+  static const TextStyle bodyLight = body;
+
+  static const TextStyle bodyLargeDark = bodyLarge;
+  static const TextStyle bodyLargeLight = bodyLarge;
+
+  static const TextStyle bodySmallDark = bodySmall;
+  static const TextStyle bodySmallLight = bodySmall;
+
+  static const TextStyle linkDark = link;
+  static const TextStyle linkLight = link;
+
+  static const TextStyle subtitleDark = bodySmall;
+  static const TextStyle subtitleLight = bodySmall;
+
+  // Button text styles
+  static const TextStyle buttonDark = TextStyle(
     fontSize: 16,
-    fontWeight: semiBold,
-    color: AppColors.textPrimaryLight,
-    letterSpacing: 0.2,
+    fontWeight: FontWeight.w600,
+    color: AppColors.foreground,
   );
 
-  static TextStyle linkLight = const TextStyle(
-    fontSize: 14,
-    fontWeight: medium,
-    color: AppColors.primaryOrange,
-    decoration: TextDecoration.none,
-  );
-
-  // Dark theme text styles
-  static TextStyle h1Dark = h1Light.copyWith(color: AppColors.textPrimaryDark);
-
-  static TextStyle h2Dark = h2Light.copyWith(color: AppColors.textPrimaryDark);
-
-  static TextStyle h3Dark = h3Light.copyWith(color: AppColors.textPrimaryDark);
-
-  static TextStyle bodyLargeDark = bodyLargeLight.copyWith(
-    color: AppColors.textPrimaryDark,
-  );
-
-  static TextStyle bodyDark = bodyLight.copyWith(
-    color: AppColors.textSecondaryDark,
-  );
-
-  static TextStyle bodySmallDark = bodySmallLight.copyWith(
-    color: AppColors.textTertiaryDark,
-  );
-
-  static TextStyle buttonDark = buttonLight.copyWith(
-    color: AppColors.textPrimaryDark,
-  );
-
-  static TextStyle linkDark = linkLight.copyWith(
-    color: AppColors.primaryOrange,
-  );
-
-  // Subtitle style (used for tagline)
-  static TextStyle subtitleLight = const TextStyle(
-    fontSize: 14,
-    fontWeight: regular,
-    color: AppColors.textSecondaryLight,
-    height: 1.5,
-  );
-
-  static TextStyle subtitleDark = subtitleLight.copyWith(
-    color: AppColors.textSecondaryDark,
+  static const TextStyle buttonLight = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.foreground,
   );
 }

@@ -1,6 +1,7 @@
-// path: lib/screens/login_screen.dart
+// path: lib/screens/company_login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/screen_container.dart';
 import '../widgets/app_card.dart';
 import '../widgets/primary_button.dart';
@@ -9,35 +10,71 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../routes/app_routes.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CompanyLoginScreen extends StatefulWidget {
+  const CompanyLoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CompanyLoginScreen> createState() => _CompanyLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _rutController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _rutController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
+  // Validar formato RUT chileno (ejemplo: 12.345.678-9)
+  String? _validateRUT(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Por favor ingrese su correo electrónico';
+      return 'Por favor ingrese el RUT de la empresa';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Por favor ingrese un correo válido';
+
+    // Remover puntos y guión
+    String rut = value.replaceAll('.', '').replaceAll('-', '');
+
+    if (rut.length < 2) {
+      return 'RUT inválido';
     }
+
+    // Separar número y dígito verificador
+    String rutNumber = rut.substring(0, rut.length - 1);
+    String dv = rut.substring(rut.length - 1).toUpperCase();
+
+    // Validar que el número sea numérico
+    if (int.tryParse(rutNumber) == null) {
+      return 'RUT debe contener solo números';
+    }
+
+    // Calcular dígito verificador
+    int suma = 0;
+    int multiplicador = 2;
+
+    for (int i = rutNumber.length - 1; i >= 0; i--) {
+      suma += int.parse(rutNumber[i]) * multiplicador;
+      multiplicador = multiplicador == 7 ? 2 : multiplicador + 1;
+    }
+
+    int resto = suma % 11;
+    String dvCalculado = (11 - resto).toString();
+
+    if (dvCalculado == '11') {
+      dvCalculado = '0';
+    } else if (dvCalculado == '10') {
+      dvCalculado = 'K';
+    }
+
+    if (dv != dvCalculado) {
+      return 'RUT inválido';
+    }
+
     return null;
   }
 
@@ -49,6 +86,32 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'La contraseña debe tener al menos 6 caracteres';
     }
     return null;
+  }
+
+  // Formatear RUT mientras se escribe
+  String _formatRUT(String value) {
+    String rut = value.replaceAll('.', '').replaceAll('-', '');
+
+    if (rut.isEmpty) return '';
+
+    if (rut.length <= 1) return rut;
+
+    String dv = rut.substring(rut.length - 1);
+    String number = rut.substring(0, rut.length - 1);
+
+    // Agregar puntos cada 3 dígitos
+    String formatted = '';
+    int count = 0;
+    for (int i = number.length - 1; i >= 0; i--) {
+      if (count == 3) {
+        formatted = '.$formatted';
+        count = 0;
+      }
+      formatted = number[i] + formatted;
+      count++;
+    }
+
+    return '$formatted-$dv';
   }
 
   Future<void> _handleLogin() async {
@@ -64,17 +127,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Inicio de sesión exitoso'),
+            content: Text('Inicio de sesión de empresa exitoso'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
           ),
         );
-
-        // Navigate to client dashboard
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
-        }
       }
     }
   }
@@ -101,16 +157,34 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: AppSpacing.md),
 
+              // Icon
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(255, 152, 0, 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.business,
+                    size: 40,
+                    color: Colors.orange,
+                  ),
+                ),
+              ),
+              SizedBox(height: AppSpacing.lg),
+
               // Title
               Text(
-                'Iniciar Sesión como Cliente',
+                'Iniciar Sesión como Empresa',
                 style: isDark ? AppTypography.h1Dark : AppTypography.h1Light,
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.sm),
 
               Text(
-                'Accede con tu correo electrónico',
+                'Accede con el RUT de tu empresa',
                 style: isDark
                     ? AppTypography.bodyDark
                     : AppTypography.bodyLight,
@@ -118,17 +192,36 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: AppSpacing.xl),
 
-              // Email field
+              // RUT field
               TextFormField(
-                controller: _emailController,
+                controller: _rutController,
                 decoration: const InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  hintText: 'ejemplo@correo.com',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  labelText: 'RUT de la Empresa',
+                  hintText: '12.345.678-9',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                  helperText: 'Formato: 12.345.678-9',
                 ),
-                keyboardType: TextInputType.emailAddress,
+                keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.next,
-                validator: _validateEmail,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9kK.\-]')),
+                  LengthLimitingTextInputFormatter(12),
+                ],
+                onChanged: (value) {
+                  // Auto-format RUT as user types
+                  if (value.length >= 2) {
+                    String formatted = _formatRUT(value);
+                    if (formatted != value) {
+                      _rutController.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    }
+                  }
+                },
+                validator: _validateRUT,
                 enabled: !_isLoading,
               ),
               SizedBox(height: AppSpacing.md),
@@ -173,42 +266,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Login button
               PrimaryButton(
-                text: 'Entrar',
-                icon: Icons.login,
+                text: 'Entrar como Empresa',
+                icon: Icons.business,
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
               ),
               SizedBox(height: AppSpacing.lg),
 
-              // Register link
+              // Switch to client login link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '¿No tienes cuenta? ',
-                    style: isDark
-                        ? AppTypography.bodySmallDark
-                        : AppTypography.bodySmallLight,
-                  ),
-                  TextLink(
-                    text: 'Regístrate',
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.register,
-                      );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: AppSpacing.sm),
-
-              // Company login link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '¿Eres empresa? ',
+                    '¿Eres cliente? ',
                     style: isDark
                         ? AppTypography.bodySmallDark
                         : AppTypography.bodySmallLight,
@@ -216,10 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextLink(
                     text: 'Ingresa aquí',
                     onPressed: () {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.companyLogin,
-                      );
+                      Navigator.pushReplacementNamed(context, AppRoutes.login);
                     },
                   ),
                 ],

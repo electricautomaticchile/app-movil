@@ -3,45 +3,53 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary Brand Colors
-  static const Color primaryOrange = Color(0xFFFF6B35);
+  // Dashboard Primary Colors
+  static const Color primary = Color(0xFFF97316); // Naranja
+  static const Color info = Color(0xFF3B82F6); // Azul
+  static const Color success = Color(0xFF10B981); // Verde
+  static const Color danger = Color(0xFFEF4444); // Rojo
+
+  // Background Colors
+  static const Color background = Color(0xFFEFF1F4);
+  static const Color card = Color(0xFFFFFFFF);
+
+  // Text Colors
+  static const Color foreground = Color(0xFF0A0A0A);
+  static const Color mutedForeground = Color(0xFF737373);
+
+  // UI Elements
+  static const Color border = Color(0xFFE5E5E5);
+
+  // Badge notification
+  static const Color badgeRed = Color(0xFFEF4444);
+
+  // Login/Landing Screen Colors (legacy compatibility)
+  static const Color primaryOrange = primary;
   static const Color primaryOrangeDark = Color(0xFFE55A2B);
   static const Color primaryOrangeLight = Color(0xFFFF8A5C);
 
-  // Background Colors - Light Theme
-  static const Color backgroundLight = Color(0xFFEFF1F4);
-  static const Color cardBackgroundLight = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFF8F9FA);
+  // Light theme colors
+  static const Color backgroundLight = background;
+  static const Color surfaceLight = card;
+  static const Color cardBackgroundLight = card;
+  static const Color textPrimaryLight = foreground;
+  static const Color textSecondaryLight = mutedForeground;
+  static const Color borderLight = border;
+  static const Color iconBackgroundLight = card;
 
-  // Background Colors - Dark Theme
+  // Dark theme colors
   static const Color backgroundDark = Color(0xFF121212);
+  static const Color surfaceDark = Color(0xFF1E1E1E);
   static const Color cardBackgroundDark = Color(0xFF1E1E1E);
-  static const Color surfaceDark = Color(0xFF2C2C2C);
-
-  // Text Colors - Light Theme
-  static const Color textPrimaryLight = Color(0xFF1A1A1A);
-  static const Color textSecondaryLight = Color(0xFF6B7280);
-  static const Color textTertiaryLight = Color(0xFF9CA3AF);
-
-  // Text Colors - Dark Theme
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
   static const Color textSecondaryDark = Color(0xFFD1D5DB);
-  static const Color textTertiaryDark = Color(0xFF9CA3AF);
+  static const Color borderDark = Color(0xFF404040);
+  static const Color iconBackgroundDark = Color(0xFF2A2A2A);
 
-  // UI Element Colors
-  static const Color borderLight = Color(0xFFE5E7EB);
-  static const Color borderDark = Color(0xFF374151);
+  // Error color
+  static const Color error = danger;
 
-  static const Color iconBackgroundLight = Color(0xFFFFFFFF);
-  static const Color iconBackgroundDark = Color(0xFF2C2C2C);
-
-  // Dot Indicator Colors
-  static const Color dotActive = primaryOrange;
-  static const Color dotInactive = Color(0xFFD1D5DB);
-
-  // Status Colors
-  static const Color error = Color(0xFFDC2626);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color info = Color(0xFF3B82F6);
+  // Dot indicator colors
+  static const Color dotActive = primary;
+  static const Color dotInactive = mutedForeground;
 }

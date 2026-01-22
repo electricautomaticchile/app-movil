@@ -3,6 +3,8 @@
 class AppRoutes {
   static const String landing = '/';
   static const String login = '/login';
+  static const String companyLogin = '/company-login';
   static const String register = '/register';
   static const String recover = '/recover';
+  static const String clientDashboard = '/client-dashboard';
 }

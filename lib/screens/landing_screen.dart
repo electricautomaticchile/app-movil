@@ -55,15 +55,55 @@ class LandingScreen extends StatelessWidget {
                 ),
                 SizedBox(height: AppSpacing.xl),
 
-                // Login button
+                // Client login button
                 PrimaryButton(
-                  text: 'Iniciar Sesión',
-                  icon: Icons.arrow_forward,
+                  text: 'Iniciar Sesión como Cliente',
+                  icon: Icons.person,
                   onPressed: () {
                     Navigator.pushNamed(context, AppRoutes.login);
                   },
                 ),
                 SizedBox(height: AppSpacing.md),
+
+                // Company login button
+                OutlineButton(
+                  text: 'Iniciar Sesión como Empresa',
+                  icon: Icons.business,
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.companyLogin);
+                  },
+                ),
+                SizedBox(height: AppSpacing.lg),
+
+                // Divider with text
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.1),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text(
+                        'o',
+                        style: isDark
+                            ? AppTypography.bodySmallDark
+                            : AppTypography.bodySmallLight,
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.lg),
 
                 // Register button
                 OutlineButton(
