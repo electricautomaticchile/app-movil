@@ -1,8 +1,4 @@
-46de4de
-README.md
-@@ -1,41 +1,16 @@
 # 📱 Electricautomaticchile – App Móvil
-# untitled
 
 Aplicación móvil desarrollada en **Flutter** como base para la plataforma de gestión eléctrica de **Electricautomaticchile**.
 A new Flutter project.
