@@ -18,6 +18,8 @@ class IconCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -27,11 +29,15 @@ class IconCircleButton extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: isDark ? AppColors.cardBackgroundDark : AppColors.card,
               shape: BoxShape.circle,
-              boxShadow: AppShadows.small,
+              boxShadow: isDark ? [] : AppShadows.small,
             ),
-            child: Icon(icon, color: AppColors.foreground, size: 24),
+            child: Icon(
+              icon,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
+              size: 24,
+            ),
           ),
           if (showBadge)
             Positioned(

@@ -20,6 +20,8 @@ class QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -29,18 +31,20 @@ class QuickAction extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: isDark ? AppColors.cardBackgroundDark : AppColors.card,
               shape: BoxShape.circle,
-              boxShadow: AppShadows.small,
+              boxShadow: isDark ? [] : AppShadows.small,
             ),
             child: Icon(icon, color: AppColors.primary, size: 28),
           ),
           SizedBox(height: AppSpacing.sm),
           Text(
             label,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.foreground,
-            ),
+            style:
+                (isDark
+                        ? AppTypography.bodySmallDark
+                        : AppTypography.bodySmallLight)
+                    .copyWith(fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
         ],

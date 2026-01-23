@@ -25,14 +25,15 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = !percentChange.startsWith('-');
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: isDark ? AppColors.cardBackgroundDark : AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        boxShadow: AppShadows.card,
+        boxShadow: isDark ? [] : AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,9 +44,11 @@ class MetricCard extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: AppTypography.bodySmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    (isDark
+                            ? AppTypography.bodySmallDark
+                            : AppTypography.bodySmallLight)
+                        .copyWith(fontWeight: FontWeight.w600),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -74,19 +77,23 @@ class MetricCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: AppTypography.h1.copyWith(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: (isDark ? AppTypography.h1Dark : AppTypography.h1Light)
+                    .copyWith(fontSize: 48, fontWeight: FontWeight.bold),
               ),
               SizedBox(width: AppSpacing.sm),
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   unit,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.mutedForeground,
-                  ),
+                  style:
+                      (isDark
+                              ? AppTypography.bodyLargeDark
+                              : AppTypography.bodyLargeLight)
+                          .copyWith(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.mutedForeground,
+                          ),
                 ),
               ),
             ],

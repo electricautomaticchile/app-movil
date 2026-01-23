@@ -7,4 +7,7 @@ class AppRoutes {
   static const String register = '/register';
   static const String recover = '/recover';
   static const String clientDashboard = '/client-dashboard';
+  static const String settings = '/settings';
+  static const String personalData = '/personal-data';
+  static const String changePassword = '/change-password';
 }

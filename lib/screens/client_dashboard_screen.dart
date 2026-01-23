@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/mock_db.dart';
+import '../routes/app_routes.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -14,6 +15,22 @@ class ClientDashboardScreen extends StatelessWidget {
 
   //sidebar
   void _showSnackBar(BuildContext context, String message) {
+    // Handle settings navigation
+    if (message == 'settings') {
+      Navigator.pushNamed(context, AppRoutes.settings);
+      return;
+    }
+
+    // Handle logout
+    if (message == 'logout') {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.landing,
+        (route) => false, // Remove all previous routes
+      );
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
@@ -24,6 +41,8 @@ class ClientDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // datos del medidor se obtienen
     final currentSeries = MockDB.generateEnergySeries();
     final previousSeries = MockDB.generatePreviousMonthSeries();
@@ -35,7 +54,9 @@ class ClientDashboardScreen extends StatelessWidget {
         .round();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark
+          ? const Color(0xFF1A1A1A) // Gris oscuro, no negro puro
+          : AppColors.backgroundLight,
       drawer: AppDrawer(
         selectedKey: 'home',
         onSelect: (key) => _showSnackBar(context, key),
@@ -62,7 +83,12 @@ class ClientDashboardScreen extends StatelessWidget {
                   ),
                   SizedBox(height: AppSpacing.xxl),
 
-                  Text('¿Qué haremos hoy?', style: AppTypography.h3),
+                  Text(
+                    '¿Qué haremos hoy?',
+                    style: isDark
+                        ? AppTypography.h3Dark
+                        : AppTypography.h3Light,
+                  ),
                   SizedBox(height: AppSpacing.lg),
 
                   _buildQuickActions(context),
@@ -89,6 +115,8 @@ class ClientDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -98,22 +126,36 @@ class ClientDashboardScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.menu, size: 18),
               onPressed: () => Scaffold.of(context).openDrawer(),
-              color: AppColors.foreground,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
             ),
             SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ELECTRICAUTOMATICCHILE', style: AppTypography.label),
+                Text(
+                  'ELECTRICAUTOMATICCHILE',
+                  style: AppTypography.label.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.mutedForeground,
+                  ),
+                ),
                 SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
-                    Text('Bienvenido, ', style: AppTypography.h2),
+                    Text(
+                      'Bienvenido, ',
+                      style: isDark
+                          ? AppTypography.h2Dark
+                          : AppTypography.h2Light,
+                    ),
                     Text(
                       'Emmanuel',
-                      style: AppTypography.h2.copyWith(
-                        color: AppColors.primary,
-                      ),
+                      style:
+                          (isDark
+                                  ? AppTypography.h2Dark
+                                  : AppTypography.h2Light)
+                              .copyWith(color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -123,11 +165,6 @@ class ClientDashboardScreen extends StatelessWidget {
         ),
         Row(
           children: [
-            IconCircleButton(
-              icon: Icons.person_outline,
-              onTap: () => _showSnackBar(context, 'Perfil'),
-            ),
-            SizedBox(width: AppSpacing.sm),
             IconCircleButton(
               icon: Icons.notifications_outlined,
               showBadge: true,
@@ -168,10 +205,15 @@ class ClientDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHistoricalHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Histórico', style: AppTypography.h3),
+        Text(
+          'Histórico',
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
+        ),
         GestureDetector(
           onTap: () => _showSnackBar(context, 'Ver más'),
           child: Text('Ver más', style: AppTypography.link),

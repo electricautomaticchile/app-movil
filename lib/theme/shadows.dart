@@ -31,6 +31,15 @@ class AppShadows {
     ),
   ];
 
+  static const List<BoxShadow> medium = [
+    BoxShadow(
+      color: Color(0x0D000000), // ~5% black
+      blurRadius: 10,
+      offset: Offset(0, 2),
+      spreadRadius: 0,
+    ),
+  ];
+
   // Legacy shadows (for login/landing screens)
   static const List<BoxShadow> cardLight = card;
   static const List<BoxShadow> cardDark = [

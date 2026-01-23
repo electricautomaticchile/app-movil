@@ -25,11 +25,13 @@ class HistoricalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: isDark ? AppColors.cardBackgroundDark : AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: AppShadows.card,
+        boxShadow: isDark ? [] : AppShadows.card,
       ),
       child: Row(
         children: [
@@ -56,9 +58,11 @@ class HistoricalCard extends StatelessWidget {
                   // Label
                   Text(
                     label,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style:
+                        (isDark
+                                ? AppTypography.bodySmallDark
+                                : AppTypography.bodySmallLight)
+                            .copyWith(fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: AppSpacing.xs),
 
@@ -68,14 +72,21 @@ class HistoricalCard extends StatelessWidget {
                     children: [
                       Text(
                         value,
-                        style: AppTypography.h3.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            (isDark
+                                    ? AppTypography.h3Dark
+                                    : AppTypography.h3Light)
+                                .copyWith(fontWeight: FontWeight.bold),
                       ),
                       SizedBox(width: AppSpacing.xs),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(unit, style: AppTypography.bodySmall),
+                        child: Text(
+                          unit,
+                          style: isDark
+                              ? AppTypography.bodySmallDark
+                              : AppTypography.bodySmallLight,
+                        ),
                       ),
                     ],
                   ),

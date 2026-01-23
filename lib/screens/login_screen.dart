@@ -1,6 +1,8 @@
 // path: lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../utils/client_number_formatter.dart';
 import '../widgets/screen_container.dart';
 import '../widgets/app_card.dart';
 import '../widgets/primary_button.dart';
@@ -18,25 +20,25 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _clientNumberController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _clientNumberController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
+  String? _validateClientNumber(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Por favor ingrese su correo electrónico';
+      return 'Por favor ingrese su número de cliente';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Por favor ingrese un correo válido';
+    final clientNumberRegex = RegExp(r'^\d{7}-\d$');
+    if (!clientNumberRegex.hasMatch(value)) {
+      return 'Formato inválido. Use: 123456-7';
     }
     return null;
   }
@@ -110,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: AppSpacing.sm),
 
               Text(
-                'Accede con tu correo electrónico',
+                'Accede con tu número de cliente',
                 style: isDark
                     ? AppTypography.bodyDark
                     : AppTypography.bodyLight,
@@ -118,17 +120,18 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: AppSpacing.xl),
 
-              // Email field
+              // Client number field
               TextFormField(
-                controller: _emailController,
+                controller: _clientNumberController,
                 decoration: const InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  hintText: 'ejemplo@correo.com',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  labelText: 'Número de Cliente',
+                  hintText: '123456-7',
+                  prefixIcon: Icon(Icons.badge_outlined),
                 ),
-                keyboardType: TextInputType.emailAddress,
+                keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
-                validator: _validateEmail,
+                inputFormatters: [ClientNumberFormatter()],
+                validator: _validateClientNumber,
                 enabled: !_isLoading,
               ),
               SizedBox(height: AppSpacing.md),

@@ -17,9 +17,11 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Drawer(
       child: Container(
-        color: AppColors.card,
+        color: isDark ? AppColors.cardBackgroundDark : AppColors.card,
         child: Column(
           children: [
             // Header
@@ -41,17 +43,6 @@ class AppDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.pop(context);
                       onSelect('home');
-                    },
-                  ),
-                  SizedBox(height: AppSpacing.xs),
-                  _DrawerItem(
-                    icon: Icons.people_outline,
-                    label: 'Clientes',
-                    itemKey: 'clients',
-                    selected: selectedKey == 'clients',
-                    onTap: () {
-                      Navigator.pop(context);
-                      onSelect('clients');
                     },
                   ),
                   SizedBox(height: AppSpacing.xs),
@@ -101,6 +92,8 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + AppSpacing.md,
@@ -109,7 +102,12 @@ class AppDrawer extends StatelessWidget {
         bottom: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.border,
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -118,15 +116,17 @@ class AppDrawer extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 24),
             onPressed: () => Navigator.pop(context),
-            color: AppColors.foreground,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
           ),
 
           // Title
           Text(
             'Electricautomaticchile',
-            style: AppTypography.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style:
+                (isDark
+                        ? AppTypography.bodyLargeDark
+                        : AppTypography.bodyLargeLight)
+                    .copyWith(fontWeight: FontWeight.bold),
           ),
 
           // Notification bell with badge
@@ -139,7 +139,9 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                   onSelect('notifications');
                 },
-                color: AppColors.foreground,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.foreground,
               ),
               Positioned(
                 top: 8,
@@ -161,10 +163,15 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildBottomSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Divider(color: AppColors.border, height: 1),
+        Divider(
+          color: isDark ? AppColors.borderDark : AppColors.border,
+          height: 1,
+        ),
         Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
@@ -172,17 +179,6 @@ class AppDrawer extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _DrawerItem(
-                icon: Icons.person_outline,
-                label: 'Perfil',
-                itemKey: 'profile',
-                selected: selectedKey == 'profile',
-                onTap: () {
-                  Navigator.pop(context);
-                  onSelect('profile');
-                },
-              ),
-              SizedBox(height: AppSpacing.xs),
               _DrawerItem(
                 icon: Icons.settings_outlined,
                 label: 'Configuración',
@@ -209,9 +205,17 @@ class AppDrawer extends StatelessWidget {
               // Footer version
               Text(
                 'Electric v1.0.2',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.mutedForeground.withOpacity(0.6),
-                ),
+                style:
+                    (isDark
+                            ? AppTypography.bodySmallDark
+                            : AppTypography.bodySmallLight)
+                        .copyWith(
+                          color:
+                              (isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.mutedForeground)
+                                  .withOpacity(0.6),
+                        ),
               ),
               SizedBox(height: AppSpacing.sm),
             ],
@@ -243,13 +247,21 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final Color iconColor = isDanger
         ? AppColors.danger
-        : (selected ? AppColors.primary : AppColors.mutedForeground);
+        : (selected
+              ? AppColors.primary
+              : (isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.mutedForeground));
 
     final Color textColor = isDanger
         ? AppColors.danger
-        : (selected ? AppColors.primary : AppColors.foreground);
+        : (selected
+              ? AppColors.primary
+              : (isDark ? AppColors.textPrimaryDark : AppColors.foreground));
 
     return InkWell(
       onTap: onTap,
@@ -272,10 +284,14 @@ class _DrawerItem extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: AppTypography.body.copyWith(
-                  color: textColor,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                ),
+                style:
+                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                        .copyWith(
+                          color: textColor,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
               ),
             ),
             if (trailingBadge != null)
