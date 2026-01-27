@@ -1,16 +1,41 @@
-# untitled
+# ⚡ Electricautomaticchile – App Móvil
+## 🚀 Funcionalidades actuales
 
-A new Flutter project.
+- Pantalla de **Bienvenida**
+- **Inicio de sesión**
+- **Registro de usuario**
+- **Recuperación de contraseña**
+- **Dashboard Cliente**
+  - Consumo actual con gráficos
+  - Accesos rápidos
+  - Histórico de consumo
+  - Sidebar / menú lateral
+  - Modo claro y oscuro
 
-## Getting Started
+> La aplicación utiliza **datos simulados** mientras se valida el diseño y la experiencia de usuario.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tecnologías
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Flutter (Dart)**
+- Material 3
+- Arquitectura modular
+- Gráficos con `fl_chart`
+- Soporte para **Android** (Web en progreso)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## ▶️ Cómo ejecutar el proyecto
+
+### Requisitos
+- Flutter SDK
+- Android Studio o emulador Android
+
+### Pasos
+
+```bash
+git clone https://github.com/electricautomaticchile/app-movil.git
+cd app-movil
+flutter pub get
+flutter run
