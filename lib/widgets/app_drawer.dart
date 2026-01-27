@@ -47,13 +47,13 @@ class AppDrawer extends StatelessWidget {
                   ),
                   SizedBox(height: AppSpacing.xs),
                   _DrawerItem(
-                    icon: Icons.devices_outlined,
-                    label: 'Medidores',
-                    itemKey: 'meters',
-                    selected: selectedKey == 'meters',
+                    icon: Icons.bar_chart_outlined,
+                    label: 'Mi Consumo',
+                    itemKey: 'mi_consumo',
+                    selected: selectedKey == 'mi_consumo',
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect('meters');
+                      onSelect('mi_consumo');
                     },
                   ),
                   SizedBox(height: AppSpacing.xs),
@@ -66,17 +66,6 @@ class AppDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.pop(context);
                       onSelect('alerts');
-                    },
-                  ),
-                  SizedBox(height: AppSpacing.xs),
-                  _DrawerItem(
-                    icon: Icons.bar_chart_outlined,
-                    label: 'Reportes',
-                    itemKey: 'reports',
-                    selected: selectedKey == 'reports',
-                    onTap: () {
-                      Navigator.pop(context);
-                      onSelect('reports');
                     },
                   ),
                 ],

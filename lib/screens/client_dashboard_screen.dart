@@ -21,6 +21,12 @@ class ClientDashboardScreen extends StatelessWidget {
       return;
     }
 
+    // Handle Mi Consumo navigation
+    if (message == 'mi_consumo') {
+      Navigator.pushNamed(context, AppRoutes.miConsumo);
+      return;
+    }
+
     // Handle logout
     if (message == 'logout') {
       Navigator.pushNamedAndRemoveUntil(

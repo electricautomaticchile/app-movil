@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Dashboard Primary Colors
+  // dashboard colores principales
   static const Color primary = Color(0xFFF97316); // Naranja
   static const Color info = Color(0xFF3B82F6); // Azul
   static const Color success = Color(0xFF10B981); // Verde

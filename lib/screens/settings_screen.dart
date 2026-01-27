@@ -24,7 +24,7 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: isDark
-          ? AppColors.backgroundDark
+          ? const Color(0xFF1A1A1A) // Gris oscuro, igual que dashboard cliente
           : AppColors.backgroundLight,
       appBar: const SettingsHeader(title: 'Configuración'),
       body: SingleChildScrollView(

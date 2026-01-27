@@ -10,6 +10,7 @@ import 'screens/company_login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/recover_screen.dart';
 import 'screens/client_dashboard_screen.dart';
+import 'screens/mi_consumo_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/personal_data_screen.dart';
 import 'screens/change_password_screen.dart';
@@ -40,6 +41,7 @@ class ElectricApp extends StatelessWidget {
             AppRoutes.recover: (context) => const RecoverScreen(),
             AppRoutes.clientDashboard: (context) =>
                 const ClientDashboardScreen(),
+            AppRoutes.miConsumo: (context) => const MiConsumoScreen(),
             AppRoutes.settings: (context) => const SettingsScreen(),
             AppRoutes.personalData: (context) => const PersonalDataScreen(),
             AppRoutes.changePassword: (context) => const ChangePasswordScreen(),

@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     final clientNumberRegex = RegExp(r'^\d{7}-\d$');
     if (!clientNumberRegex.hasMatch(value)) {
-      return 'Formato inválido. Use: 123456-7';
+      return 'Formato inválido. Use: 1234567-8';
     }
     return null;
   }
@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _clientNumberController,
                 decoration: const InputDecoration(
                   labelText: 'Número de Cliente',
-                  hintText: '123456-7',
+                  hintText: '1234567-8',
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
                 keyboardType: TextInputType.number,
