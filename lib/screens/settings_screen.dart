@@ -188,7 +188,6 @@ class SettingsScreen extends StatelessWidget {
                           (isDark
                                   ? AppColors.textSecondaryDark
                                   : AppColors.mutedForeground)
-                              .withOpacity(0.6),
                     ),
                   ),
                   SizedBox(height: AppSpacing.xl),

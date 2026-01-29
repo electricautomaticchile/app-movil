@@ -14,6 +14,8 @@ import 'screens/mi_consumo_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/personal_data_screen.dart';
 import 'screens/change_password_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/facturas_screen.dart';
 
 class ElectricApp extends StatelessWidget {
   const ElectricApp({super.key});
@@ -45,6 +47,8 @@ class ElectricApp extends StatelessWidget {
             AppRoutes.settings: (context) => const SettingsScreen(),
             AppRoutes.personalData: (context) => const PersonalDataScreen(),
             AppRoutes.changePassword: (context) => const ChangePasswordScreen(),
+            AppRoutes.notifications: (context) => const NotificationsScreen(),
+            AppRoutes.facturas: (context) => const FacturasScreen(),
           },
 
           // Error handling
