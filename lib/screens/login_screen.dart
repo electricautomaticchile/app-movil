@@ -1,12 +1,10 @@
 // path: lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../utils/client_number_formatter.dart';
 import '../widgets/screen_container.dart';
 import '../widgets/app_card.dart';
 import '../widgets/primary_button.dart';
-import '../widgets/text_link.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../routes/app_routes.dart';
@@ -160,18 +158,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 enabled: !_isLoading,
                 onFieldSubmitted: (_) => _handleLogin(),
               ),
-              SizedBox(height: AppSpacing.lg),
-
-              // Forgot password link
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextLink(
-                  text: '¿Olvidaste tu contraseña?',
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.recover);
-                  },
-                ),
-              ),
               SizedBox(height: AppSpacing.xl),
 
               // Login button
@@ -181,52 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
               ),
-              SizedBox(height: AppSpacing.lg),
 
-              // Register link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '¿No tienes cuenta? ',
-                    style: isDark
-                        ? AppTypography.bodySmallDark
-                        : AppTypography.bodySmallLight,
-                  ),
-                  TextLink(
-                    text: 'Regístrate',
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.register,
-                      );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: AppSpacing.sm),
-
-              // Company login link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '¿Eres empresa? ',
-                    style: isDark
-                        ? AppTypography.bodySmallDark
-                        : AppTypography.bodySmallLight,
-                  ),
-                  TextLink(
-                    text: 'Ingresa aquí',
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.companyLogin,
-                      );
-                    },
-                  ),
-                ],
-              ),
             ],
           ),
         ),

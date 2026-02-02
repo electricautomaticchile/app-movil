@@ -99,12 +99,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.help_outline,
               title: 'Ayuda',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('TODO: Pantalla de Ayuda'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                Navigator.pushNamed(context, AppRoutes.help);
               },
             ),
             Divider(
@@ -140,9 +135,9 @@ class SettingsScreen extends StatelessWidget {
                         duration: Duration(seconds: 1),
                       ),
                     );
+                    final navigator = Navigator.of(context);
                     Future.delayed(const Duration(milliseconds: 500), () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
+                      navigator.pushNamedAndRemoveUntil(
                         AppRoutes.landing,
                         (route) => false,
                       );

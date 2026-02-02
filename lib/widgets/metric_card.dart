@@ -56,7 +56,7 @@ class MetricCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                 ),
                 child: Text(

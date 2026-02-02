@@ -203,7 +203,7 @@ class AppDrawer extends StatelessWidget {
                               (isDark
                                       ? AppColors.textSecondaryDark
                                       : AppColors.mutedForeground)
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                         ),
               ),
               SizedBox(height: AppSpacing.sm),
@@ -262,7 +262,7 @@ class _DrawerItem extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         ),
@@ -287,7 +287,7 @@ class _DrawerItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withOpacity(0.1),
+                  color: AppColors.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                 ),
                 child: Text(

@@ -3,9 +3,7 @@
 class AppRoutes {
   static const String landing = '/';
   static const String login = '/login';
-  static const String companyLogin = '/company-login';
-  static const String register = '/register';
-  static const String recover = '/recover';
+
   static const String clientDashboard = '/client-dashboard';
   static const String miConsumo = '/mi-consumo';
   static const String settings = '/settings';
@@ -13,4 +11,6 @@ class AppRoutes {
   static const String changePassword = '/change-password';
   static const String notifications = '/notifications';
   static const String facturas = '/facturas';
+  static const String help = '/help';
+  static const String support = '/support';
 }

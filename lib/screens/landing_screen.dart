@@ -6,8 +6,6 @@ import '../widgets/app_card.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/dot_indicator.dart';
 import '../widgets/primary_button.dart';
-import '../widgets/outline_button.dart';
-import '../widgets/text_link.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../routes/app_routes.dart';
@@ -49,81 +47,11 @@ class LandingScreen extends StatelessWidget {
 
             // Client login button
             PrimaryButton(
-              text: 'Iniciar Sesión como Cliente',
+              text: 'Iniciar Sesión como cliente',
               icon: Icons.person,
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.login);
               },
-            ),
-            SizedBox(height: AppSpacing.md),
-
-            // Company login button
-            OutlineButton(
-              text: 'Iniciar Sesión como Empresa',
-              icon: Icons.business,
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.companyLogin);
-              },
-            ),
-            SizedBox(height: AppSpacing.lg),
-
-            // Divider with text
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.1),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Text(
-                    'o',
-                    style: isDark
-                        ? AppTypography.bodySmallDark
-                        : AppTypography.bodySmallLight,
-                  ),
-                ),
-                Expanded(
-                  child: Divider(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.1),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.lg),
-
-            // Register button
-            OutlineButton(
-              text: 'Registrarse',
-              icon: Icons.person_add,
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.register);
-              },
-            ),
-            SizedBox(height: AppSpacing.lg),
-
-            // Forgot password text
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '¿Has olvidado tu contraseña? ',
-                  style: isDark
-                      ? AppTypography.bodySmallDark
-                      : AppTypography.bodySmallLight,
-                ),
-                TextLink(
-                  text: 'Recuperar aquí',
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.recover);
-                  },
-                ),
-              ],
             ),
           ],
         ),

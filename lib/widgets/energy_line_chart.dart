@@ -63,7 +63,7 @@ class EnergyLineChart extends StatelessWidget {
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: color.withOpacity(fillOpacity),
+                color: color.withValues(alpha: fillOpacity),
               ),
             ),
           ],

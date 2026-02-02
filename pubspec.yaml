@@ -40,6 +40,9 @@ dependencies:
   
   # Charts for energy consumption visualization
   fl_chart: ^0.68.0
+  
+  # URL launcher for phone calls
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

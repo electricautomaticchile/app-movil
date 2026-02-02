@@ -13,7 +13,9 @@ import '../widgets/invoice_tile.dart';
 import '../widgets/icon_circle_button.dart';
 
 class FacturasScreen extends StatelessWidget {
-  const FacturasScreen({super.key});
+  final VoidCallback? onBack;
+
+  const FacturasScreen({super.key, this.onBack});
 
   static const List<String> _months = [
     'Enero', 'Febrero', 'Marzo', 'Abril',
@@ -69,7 +71,13 @@ class FacturasScreen extends StatelessWidget {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (onBack != null) {
+            onBack!();
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       title: Text(
         'Todas las facturas',

@@ -2,16 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../data/mock_db.dart';
 import '../models/notification_provider.dart';
 import '../routes/app_routes.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/icon_circle_button.dart';
-import '../widgets/metric_card.dart';
+import '../widgets/kwh_display_card.dart';
 import '../widgets/quick_action.dart';
-import '../widgets/historical_card.dart';
 import '../widgets/app_drawer.dart';
 import 'facturas_screen.dart';
 
@@ -41,6 +39,12 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
     // Handle notifications
     if (message == 'notifications' || message == 'alerts') {
       Navigator.pushNamed(context, AppRoutes.notifications);
+      return;
+    }
+
+    // Handle help
+    if (message == 'help') {
+      Navigator.pushNamed(context, AppRoutes.help);
       return;
     }
 
@@ -83,7 +87,7 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
           _HomeContent(
             onShowSnackBar: (msg) => _showSnackBar(context, msg),
           ),
-          const FacturasScreen(),
+          FacturasScreen(onBack: () => setState(() => _currentIndex = 0)),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(isDark),
@@ -126,14 +130,6 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // datos del medidor
-    final currentSeries = MockDB.generateEnergySeries();
-    final previousSeries = MockDB.generatePreviousMonthSeries();
-    final percentChange = MockDB.calculatePercentChange(currentSeries);
-
-    final currentTotal = (currentSeries.reduce((a, b) => a + b) * 1000).round();
-    final previousTotal = (previousSeries.reduce((a, b) => a + b) * 1000).round();
-
     return Builder(
       builder: (BuildContext context) {
         return SafeArea(
@@ -145,12 +141,10 @@ class _HomeContent extends StatelessWidget {
                 _buildHeader(context),
                 SizedBox(height: AppSpacing.xxl),
 
-                MetricCard(
-                  label: 'Consumo Actual',
+                KwhDisplayCard(
                   value: '245',
                   unit: 'kWh',
-                  percentChange: percentChange.toString(),
-                  chartData: currentSeries,
+                  label: 'Consumo Actual',
                 ),
                 SizedBox(height: AppSpacing.xxl),
 
@@ -161,18 +155,6 @@ class _HomeContent extends StatelessWidget {
                 SizedBox(height: AppSpacing.lg),
 
                 _buildQuickActions(context),
-                SizedBox(height: AppSpacing.xxl),
-
-                _buildHistoricalHeader(context),
-                SizedBox(height: AppSpacing.lg),
-
-                _buildHistoricalCards(
-                  context,
-                  currentTotal,
-                  previousTotal,
-                  currentSeries,
-                  previousSeries,
-                ),
                 SizedBox(height: AppSpacing.xxl),
               ],
             ),
@@ -258,7 +240,7 @@ class _HomeContent extends StatelessWidget {
         QuickAction(
           icon: Icons.help_outline,
           label: 'Ayuda',
-          onTap: () => onShowSnackBar('Ayuda'),
+          onTap: () => onShowSnackBar('help'),
         ),
         QuickAction(
           icon: Icons.payment_outlined,
@@ -274,53 +256,4 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoricalHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Histórico',
-          style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
-        ),
-        GestureDetector(
-          onTap: () => onShowSnackBar('Ver más'),
-          child: Text('Ver más', style: AppTypography.link),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistoricalCards(
-    BuildContext context,
-    int currentTotal,
-    int previousTotal,
-    List<double> currentSeries,
-    List<double> previousSeries,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: HistoricalCard(
-            label: 'Mes Anterior',
-            value: previousTotal.toString(),
-            unit: 'kWh',
-            borderColor: AppColors.danger,
-            chartData: previousSeries,
-          ),
-        ),
-        SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: HistoricalCard(
-            label: 'Mes Actual',
-            value: currentTotal.toString(),
-            unit: 'kWh',
-            borderColor: AppColors.success,
-            chartData: currentSeries,
-          ),
-        ),
-      ],
-    );
-  }
 }

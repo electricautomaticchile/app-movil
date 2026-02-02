@@ -67,7 +67,7 @@ class SettingsSwitchTile extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: AppColors.primary,
+              activeTrackColor: AppColors.primary,
             ),
           ],
         ),
