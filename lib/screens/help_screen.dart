@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../routes/app_routes.dart';
+import '../theme/colors.dart';
 import '../theme/spacing.dart';
 
 class HelpScreen extends StatefulWidget {
@@ -19,14 +20,6 @@ class _HelpScreenState extends State<HelpScreen> {
   final _messageController = TextEditingController();
   String? _selectedCategory;
   bool _isLoading = false;
-
-  static const _backgroundColor = Color(0xFF0B0B0B);
-  static const _surfaceColor = Color(0xFF1A1A1A);
-  static const _inputColor = Color(0xFF232323);
-  static const _primaryOrange = Color(0xFFFF7A00);
-  static const _textPrimary = Colors.white;
-  static const _textSecondary = Color(0xFF888888);
-  static const _borderColor = Color(0xFF333333);
 
   static const List<String> _categories = [
     'Facturación',
@@ -64,9 +57,12 @@ class _HelpScreenState extends State<HelpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF0B0B0B) : AppColors.backgroundLight;
+    
     return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: _buildAppBar(),
+      backgroundColor: backgroundColor,
+      appBar: _buildAppBar(isDark),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(AppSpacing.screenPadding),
@@ -75,13 +71,13 @@ class _HelpScreenState extends State<HelpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeroSection(),
+                _buildHeroSection(isDark),
                 SizedBox(height: AppSpacing.xxl),
-                _buildForm(),
+                _buildForm(isDark),
                 SizedBox(height: AppSpacing.xl),
                 _buildSubmitButton(),
                 SizedBox(height: AppSpacing.xxl),
-                _buildContactSection(),
+                _buildContactSection(isDark),
                 SizedBox(height: AppSpacing.xl),
               ],
             ),
@@ -91,13 +87,16 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(bool isDark) {
+    final backgroundColor = isDark ? const Color(0xFF0B0B0B) : AppColors.backgroundLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    
     return AppBar(
-      backgroundColor: _backgroundColor,
+      backgroundColor: backgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.chevron_left, size: 28),
-        color: _textPrimary,
+        color: textColor,
         onPressed: () {
           if (widget.onBack != null) {
             widget.onBack!();
@@ -106,10 +105,10 @@ class _HelpScreenState extends State<HelpScreen> {
           }
         },
       ),
-      title: const Text(
+      title: Text(
         'Centro de Ayuda',
         style: TextStyle(
-          color: _textPrimary,
+          color: textColor,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -118,24 +117,27 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildHeroSection() {
+  Widget _buildHeroSection(bool isDark) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '¿En qué podemos\nayudarte?',
           style: TextStyle(
-            color: _textPrimary,
+            color: textPrimary,
             fontSize: 28,
             fontWeight: FontWeight.bold,
             height: 1.2,
           ),
         ),
         SizedBox(height: AppSpacing.md),
-        const Text(
+        Text(
           'Completa el formulario y nos pondremos en contacto contigo lo antes posible.',
           style: TextStyle(
-            color: _textSecondary,
+            color: textSecondary,
             fontSize: 15,
             height: 1.5,
           ),
@@ -144,15 +146,16 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Asunto'),
+        _buildLabel('Asunto', isDark),
         SizedBox(height: AppSpacing.sm),
         _buildTextField(
           controller: _subjectController,
           hintText: 'Ej. Problema con mi factura',
+          isDark: isDark,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Por favor ingresa un asunto';
@@ -161,22 +164,24 @@ class _HelpScreenState extends State<HelpScreen> {
           },
         ),
         SizedBox(height: AppSpacing.lg),
-        _buildLabel('Categoría'),
+        _buildLabel('Categoría', isDark),
         SizedBox(height: AppSpacing.sm),
-        _buildDropdown(),
+        _buildDropdown(isDark),
         SizedBox(height: AppSpacing.lg),
-        _buildLabel('Mensaje'),
+        _buildLabel('Mensaje', isDark),
         SizedBox(height: AppSpacing.sm),
-        _buildTextArea(),
+        _buildTextArea(isDark),
       ],
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, bool isDark) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    
     return Text(
       text,
-      style: const TextStyle(
-        color: _textPrimary,
+      style: TextStyle(
+        color: textPrimary,
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
@@ -186,17 +191,23 @@ class _HelpScreenState extends State<HelpScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
+    required bool isDark,
     String? Function(String?)? validator,
   }) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final inputColor = isDark ? const Color(0xFF232323) : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: _textPrimary, fontSize: 16),
+      style: TextStyle(color: textPrimary, fontSize: 16),
       validator: validator,
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: _textSecondary, fontSize: 15),
+        hintStyle: TextStyle(color: textSecondary, fontSize: 15),
         filled: true,
-        fillColor: _inputColor,
+        fillColor: inputColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
@@ -204,11 +215,11 @@ class _HelpScreenState extends State<HelpScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _borderColor, width: 1),
+          borderSide: BorderSide(color: borderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _primaryOrange, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
@@ -222,17 +233,23 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildDropdown() {
+  Widget _buildDropdown(bool isDark) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : AppColors.surfaceLight;
+    final inputColor = isDark ? const Color(0xFF232323) : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    
     return DropdownButtonFormField<String>(
       initialValue: _selectedCategory,
-      dropdownColor: _surfaceColor,
-      style: const TextStyle(color: _textPrimary, fontSize: 16),
-      icon: const Icon(Icons.keyboard_arrow_down, color: _textSecondary),
+      dropdownColor: surfaceColor,
+      style: TextStyle(color: textPrimary, fontSize: 16),
+      icon: Icon(Icons.keyboard_arrow_down, color: textSecondary),
       decoration: InputDecoration(
         hintText: 'Seleccionar opción',
-        hintStyle: const TextStyle(color: _textSecondary, fontSize: 15),
+        hintStyle: TextStyle(color: textSecondary, fontSize: 15),
         filled: true,
-        fillColor: _inputColor,
+        fillColor: inputColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
@@ -240,11 +257,11 @@ class _HelpScreenState extends State<HelpScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _borderColor, width: 1),
+          borderSide: BorderSide(color: borderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _primaryOrange, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
       validator: (value) {
@@ -263,11 +280,16 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildTextArea() {
+  Widget _buildTextArea(bool isDark) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final inputColor = isDark ? const Color(0xFF232323) : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    
     return TextFormField(
       controller: _messageController,
       maxLines: 5,
-      style: const TextStyle(color: _textPrimary, fontSize: 16),
+      style: TextStyle(color: textPrimary, fontSize: 16),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Por favor describe tu problema';
@@ -276,9 +298,9 @@ class _HelpScreenState extends State<HelpScreen> {
       },
       decoration: InputDecoration(
         hintText: 'Describe tu problema en detalle…',
-        hintStyle: const TextStyle(color: _textSecondary, fontSize: 15),
+        hintStyle: TextStyle(color: textSecondary, fontSize: 15),
         filled: true,
-        fillColor: _inputColor,
+        fillColor: inputColor,
         contentPadding: const EdgeInsets.all(20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
@@ -286,11 +308,11 @@ class _HelpScreenState extends State<HelpScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _borderColor, width: 1),
+          borderSide: BorderSide(color: borderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
-          borderSide: const BorderSide(color: _primaryOrange, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
@@ -311,9 +333,9 @@ class _HelpScreenState extends State<HelpScreen> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _primaryOrange,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: _primaryOrange.withValues(alpha: 0.5),
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
@@ -339,26 +361,33 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildContactSection() {
+  Widget _buildContactSection(bool isDark) {
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    
     return Column(
       children: [
+        // Divider with text
         Row(
           children: [
-            const Expanded(child: Divider(color: _borderColor)),
+            Expanded(child: Divider(color: borderColor)),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: const Text(
+              child: Text(
                 'O contáctanos directamente',
                 style: TextStyle(
-                  color: _textSecondary,
+                  color: textSecondary,
                   fontSize: 13,
                 ),
               ),
             ),
-            const Expanded(child: Divider(color: _borderColor)),
+            Expanded(child: Divider(color: borderColor)),
           ],
         ),
         SizedBox(height: AppSpacing.lg),
+        
+        // Contact cards
         Row(
           children: [
             Expanded(
@@ -366,6 +395,7 @@ class _HelpScreenState extends State<HelpScreen> {
                 icon: Icons.menu_book_outlined,
                 title: 'Preguntas Frecuentes',
                 subtitle: 'Dudas generales',
+                isDark: isDark,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Preguntas frecuentes')),
@@ -377,14 +407,46 @@ class _HelpScreenState extends State<HelpScreen> {
             Expanded(
               child: _buildContactCard(
                 icon: Icons.phone_outlined,
-                title: 'Llamar a Soporte',
-                subtitle: 'Lunes a Viernes',
+                title: 'Llamar',
+                subtitle: '+56 2 2345 6789',
+                isDark: isDark,
                 onTap: () {
                   Navigator.pushNamed(context, AppRoutes.support);
                 },
               ),
             ),
           ],
+        ),
+        SizedBox(height: AppSpacing.md),
+        
+        // Operating hours info
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.schedule_outlined,
+                color: textSecondary,
+                size: 20,
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Horario de atención: Lunes a Viernes, 9:00 - 18:00 hrs',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -394,27 +456,32 @@ class _HelpScreenState extends State<HelpScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : AppColors.surfaceLight;
+    
     return Material(
-      color: _surfaceColor,
+      color: surfaceColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        splashColor: _primaryOrange.withValues(alpha: 0.1),
-        highlightColor: _primaryOrange.withValues(alpha: 0.05),
+        splashColor: AppColors.primary.withValues(alpha: 0.1),
+        highlightColor: AppColors.primary.withValues(alpha: 0.05),
         child: Container(
           padding: EdgeInsets.all(AppSpacing.md),
           child: Column(
             children: [
-              Icon(icon, color: _primaryOrange, size: 28),
+              Icon(icon, color: AppColors.primary, size: 28),
               SizedBox(height: AppSpacing.sm),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: _textPrimary,
+                style: TextStyle(
+                  color: textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -422,8 +489,8 @@ class _HelpScreenState extends State<HelpScreen> {
               SizedBox(height: AppSpacing.xs),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: _textSecondary,
+                style: TextStyle(
+                  color: textSecondary,
                   fontSize: 11,
                 ),
               ),

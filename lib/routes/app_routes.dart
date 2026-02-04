@@ -13,4 +13,5 @@ class AppRoutes {
   static const String facturas = '/facturas';
   static const String help = '/help';
   static const String support = '/support';
+  static const String payments = '/payments';
 }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'user_model.dart';
 
 class UserProvider extends ChangeNotifier {
-  UserModel _user = UserModel.defaultUser();
+  final UserModel _user = UserModel.defaultUser();
 
   UserModel get user => _user;
 

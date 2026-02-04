@@ -48,6 +48,12 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
       return;
     }
 
+    // Handle payments
+    if (message == 'payments') {
+      Navigator.pushNamed(context, AppRoutes.payments);
+      return;
+    }
+
     // Handle facturas
     if (message == 'facturas') {
       setState(() => _currentIndex = 1);
@@ -245,7 +251,7 @@ class _HomeContent extends StatelessWidget {
         QuickAction(
           icon: Icons.payment_outlined,
           label: 'Pagos',
-          onTap: () => onShowSnackBar('Pagos'),
+          onTap: () => onShowSnackBar('payments'),
         ),
         QuickAction(
           icon: Icons.settings_outlined,

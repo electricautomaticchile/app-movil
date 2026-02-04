@@ -16,6 +16,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/facturas_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/support_screen.dart';
+import 'screens/payments_screen.dart';
 
 class ElectricApp extends StatelessWidget {
   const ElectricApp({super.key});
@@ -49,6 +50,7 @@ class ElectricApp extends StatelessWidget {
             AppRoutes.facturas: (context) => const FacturasScreen(),
             AppRoutes.help: (context) => const HelpScreen(),
             AppRoutes.support: (context) => const SupportScreen(),
+            AppRoutes.payments: (context) => const PaymentsScreen(),
           },
 
           // Error handling
