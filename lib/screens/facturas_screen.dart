@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/pdf_report_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -12,10 +13,17 @@ import '../widgets/month_selector_button.dart';
 import '../widgets/invoice_tile.dart';
 import '../widgets/icon_circle_button.dart';
 
-class FacturasScreen extends StatelessWidget {
+class FacturasScreen extends StatefulWidget {
   final VoidCallback? onBack;
 
   const FacturasScreen({super.key, this.onBack});
+
+  @override
+  State<FacturasScreen> createState() => _FacturasScreenState();
+}
+
+class _FacturasScreenState extends State<FacturasScreen> {
+  bool _isGeneratingPdf = false;
 
   static const List<String> _months = [
     'Enero', 'Febrero', 'Marzo', 'Abril',
@@ -72,8 +80,8 @@ class FacturasScreen extends StatelessWidget {
         icon: const Icon(Icons.arrow_back),
         color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
         onPressed: () {
-          if (onBack != null) {
-            onBack!();
+          if (widget.onBack != null) {
+            widget.onBack!();
           } else {
             Navigator.pop(context);
           }
@@ -353,25 +361,78 @@ class FacturasScreen extends StatelessWidget {
 
   Widget _buildDownloadCTA(BuildContext context, bool isDark) {
     return Center(
-      child: TextButton.icon(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Descargando reporte mensual...'),
-              duration: Duration(seconds: 2),
+      child: _isGeneratingPdf
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Generando reporte...',
+                  style: AppTypography.link.copyWith(
+                    color: AppColors.primary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            )
+          : TextButton.icon(
+              onPressed: _generatePdfReport,
+              icon: Icon(
+                Icons.download_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              label: Text(
+                'Descargar reporte mensual',
+                style: AppTypography.link,
+              ),
             ),
-          );
-        },
-        icon: Icon(
-          Icons.download_outlined,
-          color: AppColors.primary,
-          size: 20,
-        ),
-        label: Text(
-          'Descargar reporte mensual',
-          style: AppTypography.link,
-        ),
-      ),
     );
+  }
+
+  Future<void> _generatePdfReport() async {
+    final provider = context.read<InvoiceProvider>();
+    final invoices = provider.filteredInvoices;
+
+    setState(() => _isGeneratingPdf = true);
+
+    try {
+      await PdfReportService.generateAndOpenMonthlyReport(
+        invoices: invoices,
+        year: provider.selectedYear,
+        monthName: provider.selectedMonthName,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reporte generado exitosamente'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar el reporte: $e'),
+            backgroundColor: AppColors.danger,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGeneratingPdf = false);
+      }
+    }
   }
 }

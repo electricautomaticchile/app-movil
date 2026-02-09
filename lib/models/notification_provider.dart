@@ -43,6 +43,28 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  /// Elimina una notificación por ID
+  void deleteNotification(String id) {
+    _notifications.removeWhere((n) => n.id == id);
+    notifyListeners();
+  }
+
+  /// Elimina todas las notificaciones
+  void deleteAll() {
+    _notifications.clear();
+    notifyListeners();
+  }
+
+  /// Restaura una notificación (para undo)
+  void restoreNotification(AppNotification notification, int index) {
+    if (index >= 0 && index <= _notifications.length) {
+      _notifications.insert(index, notification);
+    } else {
+      _notifications.add(notification);
+    }
+    notifyListeners();
+  }
+
   /// Carga datos mock para desarrollo
   void _loadMockNotifications() {
     final now = DateTime.now();

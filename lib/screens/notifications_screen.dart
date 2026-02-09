@@ -17,7 +17,7 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF1A1A1A) // Gris oscuro, igual que dashboard cliente
+          ? const Color(0xFF1A1A1A)
           : AppColors.backgroundLight,
       appBar: _buildAppBar(context, isDark),
       body: Consumer<NotificationProvider>(
@@ -52,26 +52,150 @@ class NotificationsScreen extends StatelessWidget {
       actions: [
         Consumer<NotificationProvider>(
           builder: (context, provider, child) {
-            if (!provider.hasUnread) return const SizedBox.shrink();
-            
-            return TextButton(
-              onPressed: () {
-                provider.markAllAsRead();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Todas las notificaciones marcadas como leídas'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: Text(
-                'Leer todas',
-                style: AppTypography.link.copyWith(fontSize: 13),
+            if (provider.notifications.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.foreground,
               ),
+              color: isDark
+                  ? AppColors.cardBackgroundDark
+                  : AppColors.cardBackgroundLight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+              onSelected: (value) {
+                switch (value) {
+                  case 'read_all':
+                    _markAllAsRead(context, provider);
+                    break;
+                  case 'delete_all':
+                    _confirmDeleteAll(context, provider, isDark);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                if (provider.hasUnread)
+                  PopupMenuItem<String>(
+                    value: 'read_all',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.mark_email_read_outlined,
+                          size: 20,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.foreground,
+                        ),
+                        SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'Marcar todas como leídas',
+                          style: isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight,
+                        ),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem<String>(
+                  value: 'delete_all',
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.delete_sweep_outlined,
+                        size: 20,
+                        color: AppColors.danger,
+                      ),
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Eliminar todas',
+                        style: (isDark
+                                ? AppTypography.bodyDark
+                                : AppTypography.bodyLight)
+                            .copyWith(color: AppColors.danger),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         ),
       ],
+    );
+  }
+
+  void _markAllAsRead(BuildContext context, NotificationProvider provider) {
+    provider.markAllAsRead();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Todas las notificaciones marcadas como leídas'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _confirmDeleteAll(
+    BuildContext context,
+    NotificationProvider provider,
+    bool isDark,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark
+            ? AppColors.cardBackgroundDark
+            : AppColors.cardBackgroundLight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        title: Text(
+          '¿Eliminar todas las notificaciones?',
+          style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
+        ),
+        content: Text(
+          'Esta acción no se puede deshacer.',
+          style: isDark ? AppTypography.bodyDark : AppTypography.bodyLight,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.mutedForeground,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              provider.deleteAll();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Todas las notificaciones eliminadas'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+              ),
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -110,6 +234,39 @@ class NotificationsScreen extends StatelessWidget {
               provider.markAsRead(notification.id);
             }
             // Aquí se podría navegar a un detalle o acción específica
+          },
+          onMarkAsRead: () {
+            provider.markAsRead(notification.id);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Notificación marcada como leída'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          },
+          onDismissed: () {
+            final deletedNotification = notification;
+            final deletedIndex = index;
+            
+            provider.deleteNotification(notification.id);
+            
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Notificación eliminada'),
+                duration: const Duration(seconds: 4),
+                action: SnackBarAction(
+                  label: 'Deshacer',
+                  textColor: AppColors.primary,
+                  onPressed: () {
+                    provider.restoreNotification(
+                      deletedNotification,
+                      deletedIndex,
+                    );
+                  },
+                ),
+              ),
+            );
           },
         );
       },

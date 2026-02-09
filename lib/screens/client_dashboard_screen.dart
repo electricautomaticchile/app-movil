@@ -54,6 +54,12 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
       return;
     }
 
+    // Handle remote control
+    if (message == 'remote_control') {
+      Navigator.pushNamed(context, AppRoutes.remoteControl);
+      return;
+    }
+
     // Handle facturas
     if (message == 'facturas') {
       setState(() => _currentIndex = 1);
@@ -87,14 +93,23 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
         selectedKey: _currentIndex == 0 ? 'home' : 'facturas',
         onSelect: (key) => _showSnackBar(context, key),
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _HomeContent(
-            onShowSnackBar: (msg) => _showSnackBar(context, msg),
-          ),
-          FacturasScreen(onBack: () => setState(() => _currentIndex = 0)),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: _currentIndex == 0
+            ? _HomeContent(
+                key: const ValueKey('home'),
+                onShowSnackBar: (msg) => _showSnackBar(context, msg),
+              )
+            : FacturasScreen(
+                key: const ValueKey('facturas'),
+                onBack: () => setState(() => _currentIndex = 0),
+              ),
       ),
       bottomNavigationBar: _buildBottomNav(isDark),
     );
@@ -130,7 +145,7 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
 class _HomeContent extends StatelessWidget {
   final void Function(String) onShowSnackBar;
 
-  const _HomeContent({required this.onShowSnackBar});
+  const _HomeContent({super.key, required this.onShowSnackBar});
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +267,11 @@ class _HomeContent extends StatelessWidget {
           icon: Icons.payment_outlined,
           label: 'Pagos',
           onTap: () => onShowSnackBar('payments'),
+        ),
+        QuickAction(
+          icon: Icons.power_settings_new,
+          label: 'Control',
+          onTap: () => onShowSnackBar('remote_control'),
         ),
         QuickAction(
           icon: Icons.settings_outlined,
