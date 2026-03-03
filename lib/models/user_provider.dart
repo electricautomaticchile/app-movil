@@ -1,28 +1,45 @@
-// path: lib/models/user_provider.dart
-
 import 'package:flutter/material.dart';
 import 'user_model.dart';
 
 class UserProvider extends ChangeNotifier {
-  final UserModel _user = UserModel.defaultUser();
+  UserModel? _user;
 
-  UserModel get user => _user;
+  UserModel? get user => _user;
+  bool get isLoggedIn => _user != null;
+
+  void setUser(UserModel user) {
+    _user = user;
+    notifyListeners();
+  }
+
+  void clearUser() {
+    _user = null;
+    notifyListeners();
+  }
 
   void updateUser({
-    String? name,
-    String? email,
-    String? phone,
-    String? address,
+    String? nombre,
+    String? correo,
+    String? telefono,
+    String? direccion,
+    String? ciudad,
+    String? rut,
+    String? imagenPerfil,
   }) {
-    if (name != null) _user.name = name;
-    if (email != null) _user.email = email;
-    if (phone != null) _user.phone = phone;
-    if (address != null) _user.address = address;
+    if (_user == null) return;
+    if (nombre != null) _user!.nombre = nombre;
+    if (correo != null) _user!.correo = correo;
+    if (telefono != null) _user!.telefono = telefono;
+    if (direccion != null) _user!.direccion = direccion;
+    if (ciudad != null) _user!.ciudad = ciudad;
+    if (rut != null) _user!.rut = rut;
+    if (imagenPerfil != null) _user!.imagenPerfil = imagenPerfil;
     notifyListeners();
   }
 
   void toggleNotifications(bool value) {
-    _user.notificationsEnabled = value;
+    if (_user == null) return;
+    _user!.notificacionesSms = value;
     notifyListeners();
   }
 }

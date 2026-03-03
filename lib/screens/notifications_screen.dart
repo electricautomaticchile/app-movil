@@ -114,10 +114,11 @@ class NotificationsScreen extends StatelessWidget {
                       SizedBox(width: AppSpacing.sm),
                       Text(
                         'Eliminar todas',
-                        style: (isDark
-                                ? AppTypography.bodyDark
-                                : AppTypography.bodyLight)
-                            .copyWith(color: AppColors.danger),
+                        style:
+                            (isDark
+                                    ? AppTypography.bodyDark
+                                    : AppTypography.bodyLight)
+                                .copyWith(color: AppColors.danger),
                       ),
                     ],
                   ),
@@ -205,10 +206,7 @@ class NotificationsScreen extends StatelessWidget {
     bool isDark,
   ) {
     return ListView.separated(
-      padding: EdgeInsets.only(
-        top: AppSpacing.sm,
-        bottom: AppSpacing.xxl,
-      ),
+      padding: EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xxl),
       itemCount: provider.notifications.length + 1, // +1 para el footer
       separatorBuilder: (context, index) {
         if (index == provider.notifications.length - 1) {
@@ -217,7 +215,8 @@ class NotificationsScreen extends StatelessWidget {
         return Divider(
           height: 1,
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
-          indent: AppSpacing.md + 40 + AppSpacing.md, // Alineado con el contenido
+          indent:
+              AppSpacing.md + 40 + AppSpacing.md, // Alineado con el contenido
         );
       },
       itemBuilder: (context, index) {
@@ -230,7 +229,7 @@ class NotificationsScreen extends StatelessWidget {
         return NotificationTile(
           notification: notification,
           onTap: () {
-            if (!notification.isRead) {
+            if (!notification.leida) {
               provider.markAsRead(notification.id);
             }
             // Aquí se podría navegar a un detalle o acción específica
@@ -247,9 +246,9 @@ class NotificationsScreen extends StatelessWidget {
           onDismissed: () {
             final deletedNotification = notification;
             final deletedIndex = index;
-            
+
             provider.deleteNotification(notification.id);
-            
+
             ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -290,10 +289,10 @@ class NotificationsScreen extends StatelessWidget {
             'No tienes notificaciones',
             style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
                 .copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.mutedForeground,
-            ),
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.mutedForeground,
+                ),
           ),
           SizedBox(height: AppSpacing.xs),
           Text(
@@ -316,12 +315,11 @@ class NotificationsScreen extends StatelessWidget {
       child: Center(
         child: Text(
           'Has llegado al final de tus notificaciones',
-          style: (isDark
-                  ? AppTypography.bodySmallDark
-                  : AppTypography.bodySmallLight)
-              .copyWith(
-            fontStyle: FontStyle.italic,
-          ),
+          style:
+              (isDark
+                      ? AppTypography.bodySmallDark
+                      : AppTypography.bodySmallLight)
+                  .copyWith(fontStyle: FontStyle.italic),
         ),
       ),
     );

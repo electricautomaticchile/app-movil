@@ -6,18 +6,15 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/invoice.dart';
 
-/// Servicio para generar reportes PDF
 class PdfReportService {
-  /// Genera un reporte mensual de facturas en PDF y lo muestra/descarga
   static Future<void> generateAndOpenMonthlyReport({
     required List<Invoice> invoices,
     required int year,
     required String monthName,
   }) async {
-    // Cargar fuente con soporte Unicode
     final font = await PdfGoogleFonts.nunitoRegular();
     final fontBold = await PdfGoogleFonts.nunitoBold();
-    
+
     final pdfBytes = await _generatePdfBytes(
       invoices: invoices,
       year: year,
@@ -26,7 +23,6 @@ class PdfReportService {
       fontBold: fontBold,
     );
 
-    // Usar printing para mostrar/compartir/descargar el PDF
     await Printing.layoutPdf(
       onLayout: (format) async => pdfBytes,
       name: 'Reporte_${monthName}_$year.pdf',
@@ -42,22 +38,17 @@ class PdfReportService {
   }) async {
     final pdf = pw.Document();
 
-    // Calcular totales
-    final totalAmount = invoices.fold<double>(
-      0,
-      (sum, invoice) => sum + invoice.amount,
-    );
-    final paidAmount = invoices
-        .where((i) => i.status == InvoiceStatus.paid)
-        .fold<double>(0, (sum, i) => sum + i.amount);
-    final overdueAmount = invoices
-        .where((i) => i.status == InvoiceStatus.overdue)
-        .fold<double>(0, (sum, i) => sum + i.amount);
-    final pendingAmount = invoices
-        .where((i) => i.status == InvoiceStatus.pending)
-        .fold<double>(0, (sum, i) => sum + i.amount);
+    final totalMonto = invoices.fold<double>(0, (sum, i) => sum + i.monto);
+    final pagadoMonto = invoices
+        .where((i) => i.estado == 'pagado')
+        .fold<double>(0, (sum, i) => sum + i.monto);
+    final vencidoMonto = invoices
+        .where((i) => i.estado == 'vencido')
+        .fold<double>(0, (sum, i) => sum + i.monto);
+    final pendienteMonto = invoices
+        .where((i) => i.estado == 'pendiente')
+        .fold<double>(0, (sum, i) => sum + i.monto);
 
-    // Crear estilos con las fuentes cargadas
     final baseStyle = pw.TextStyle(font: font);
     final boldStyle = pw.TextStyle(font: fontBold);
 
@@ -65,41 +56,32 @@ class PdfReportService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        theme: pw.ThemeData.withFont(
-          base: font,
-          bold: fontBold,
-        ),
+        theme: pw.ThemeData.withFont(base: font, bold: fontBold),
         build: (context) => [
-          // Header
           _buildHeader(monthName, year, boldStyle),
           pw.SizedBox(height: 30),
-
-          // Resumen
           _buildSummary(
             documentCount: invoices.length,
-            totalAmount: totalAmount,
-            paidAmount: paidAmount,
-            overdueAmount: overdueAmount,
-            pendingAmount: pendingAmount,
+            totalMonto: totalMonto,
+            pagadoMonto: pagadoMonto,
+            vencidoMonto: vencidoMonto,
+            pendienteMonto: pendienteMonto,
             baseStyle: baseStyle,
             boldStyle: boldStyle,
           ),
           pw.SizedBox(height: 30),
-
-          // Tabla de facturas
-          if (invoices.isNotEmpty) ...[
-            _buildInvoiceTable(invoices, baseStyle, boldStyle),
-          ] else ...[
+          if (invoices.isNotEmpty)
+            _buildInvoiceTable(invoices, baseStyle, boldStyle)
+          else
             pw.Center(
               child: pw.Text(
-                'No hay facturas para este periodo',
+                'No hay boletas para este periodo',
                 style: baseStyle.copyWith(
                   fontSize: 14,
                   color: PdfColors.grey600,
                 ),
               ),
             ),
-          ],
         ],
         footer: (context) => _buildFooter(context, baseStyle),
       ),
@@ -108,11 +90,14 @@ class PdfReportService {
     return pdf.save();
   }
 
-  static pw.Widget _buildHeader(String monthName, int year, pw.TextStyle boldStyle) {
+  static pw.Widget _buildHeader(
+    String monthName,
+    int year,
+    pw.TextStyle boldStyle,
+  ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Logo y título
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
@@ -129,10 +114,7 @@ class PdfReportService {
                 pw.SizedBox(height: 4),
                 pw.Text(
                   'Administracion Inteligente del Suministro Electrico',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    color: PdfColors.grey600,
-                  ),
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                 ),
               ],
             ),
@@ -158,20 +140,17 @@ class PdfReportService {
         pw.SizedBox(height: 20),
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 10),
-        pw.Text(
-          '$monthName $year',
-          style: boldStyle.copyWith(fontSize: 24),
-        ),
+        pw.Text('$monthName $year', style: boldStyle.copyWith(fontSize: 24)),
       ],
     );
   }
 
   static pw.Widget _buildSummary({
     required int documentCount,
-    required double totalAmount,
-    required double paidAmount,
-    required double overdueAmount,
-    required double pendingAmount,
+    required double totalMonto,
+    required double pagadoMonto,
+    required double vencidoMonto,
+    required double pendienteMonto,
     required pw.TextStyle baseStyle,
     required pw.TextStyle boldStyle,
   }) {
@@ -186,17 +165,14 @@ class PdfReportService {
         children: [
           pw.Text(
             'RESUMEN',
-            style: boldStyle.copyWith(
-              fontSize: 12,
-              color: PdfColors.grey700,
-            ),
+            style: boldStyle.copyWith(fontSize: 12, color: PdfColors.grey700),
           ),
           pw.SizedBox(height: 16),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               _buildSummaryItem(
-                'Total Documentos',
+                'Total Boletas',
                 '$documentCount',
                 PdfColors.blue700,
                 baseStyle,
@@ -204,28 +180,28 @@ class PdfReportService {
               ),
               _buildSummaryItem(
                 'Monto Total',
-                _formatAmount(totalAmount),
+                _formatMonto(totalMonto),
                 PdfColors.grey800,
                 baseStyle,
                 boldStyle,
               ),
               _buildSummaryItem(
                 'Pagado',
-                _formatAmount(paidAmount),
+                _formatMonto(pagadoMonto),
                 PdfColors.green700,
                 baseStyle,
                 boldStyle,
               ),
               _buildSummaryItem(
                 'Vencido',
-                _formatAmount(overdueAmount),
+                _formatMonto(vencidoMonto),
                 PdfColors.red700,
                 baseStyle,
                 boldStyle,
               ),
               _buildSummaryItem(
                 'Pendiente',
-                _formatAmount(pendingAmount),
+                _formatMonto(pendienteMonto),
                 PdfColor.fromHex('#F97316'),
                 baseStyle,
                 boldStyle,
@@ -249,19 +225,10 @@ class PdfReportService {
       children: [
         pw.Text(
           label,
-          style: baseStyle.copyWith(
-            fontSize: 9,
-            color: PdfColors.grey600,
-          ),
+          style: baseStyle.copyWith(fontSize: 9, color: PdfColors.grey600),
         ),
         pw.SizedBox(height: 4),
-        pw.Text(
-          value,
-          style: boldStyle.copyWith(
-            fontSize: 14,
-            color: color,
-          ),
-        ),
+        pw.Text(value, style: boldStyle.copyWith(fontSize: 14, color: color)),
       ],
     );
   }
@@ -275,46 +242,42 @@ class PdfReportService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'DETALLE DE FACTURAS',
-          style: boldStyle.copyWith(
-            fontSize: 12,
-            color: PdfColors.grey700,
-          ),
+          'DETALLE DE BOLETAS',
+          style: boldStyle.copyWith(fontSize: 12, color: PdfColors.grey700),
         ),
         pw.SizedBox(height: 12),
         pw.Table(
           border: pw.TableBorder.all(color: PdfColors.grey300),
           columnWidths: {
-            0: const pw.FlexColumnWidth(1.5),
-            1: const pw.FlexColumnWidth(3),
-            2: const pw.FlexColumnWidth(1.5),
-            3: const pw.FlexColumnWidth(1.5),
-            4: const pw.FlexColumnWidth(1.2),
+            0: const pw.FlexColumnWidth(2),
+            1: const pw.FlexColumnWidth(1.5),
+            2: const pw.FlexColumnWidth(2),
+            3: const pw.FlexColumnWidth(1.2),
           },
           children: [
-            // Header row
             pw.TableRow(
-              decoration: pw.BoxDecoration(
-                color: PdfColors.grey200,
-              ),
+              decoration: const pw.BoxDecoration(color: PdfColors.grey200),
               children: [
-                _buildTableCell('N Factura', isHeader: true, boldStyle: boldStyle),
-                _buildTableCell('Descripcion', isHeader: true, boldStyle: boldStyle),
+                _buildTableCell(
+                  'Periodo',
+                  isHeader: true,
+                  boldStyle: boldStyle,
+                ),
                 _buildTableCell('Fecha', isHeader: true, boldStyle: boldStyle),
                 _buildTableCell('Monto', isHeader: true, boldStyle: boldStyle),
                 _buildTableCell('Estado', isHeader: true, boldStyle: boldStyle),
               ],
             ),
-            // Data rows
-            ...invoices.map((invoice) => pw.TableRow(
-                  children: [
-                    _buildTableCell(invoice.number, baseStyle: baseStyle),
-                    _buildTableCell(invoice.description, baseStyle: baseStyle),
-                    _buildTableCell(invoice.formattedDate, baseStyle: baseStyle),
-                    _buildTableCell(invoice.formattedAmount, baseStyle: baseStyle),
-                    _buildStatusCell(invoice.status, boldStyle),
-                  ],
-                )),
+            ...invoices.map(
+              (invoice) => pw.TableRow(
+                children: [
+                  _buildTableCell(invoice.periodo, baseStyle: baseStyle),
+                  _buildTableCell(invoice.formattedDate, baseStyle: baseStyle),
+                  _buildTableCell(invoice.formattedMonto, baseStyle: baseStyle),
+                  _buildStatusCell(invoice.estado, boldStyle),
+                ],
+              ),
+            ),
           ],
         ),
       ],
@@ -332,39 +295,32 @@ class PdfReportService {
       child: pw.Text(
         text,
         style: isHeader
-            ? boldStyle?.copyWith(
-                fontSize: 10,
-                color: PdfColors.grey800,
-              )
-            : baseStyle?.copyWith(
-                fontSize: 9,
-                color: PdfColors.grey700,
-              ),
+            ? boldStyle?.copyWith(fontSize: 10, color: PdfColors.grey800)
+            : baseStyle?.copyWith(fontSize: 9, color: PdfColors.grey700),
       ),
     );
   }
 
-  static pw.Widget _buildStatusCell(InvoiceStatus status, pw.TextStyle boldStyle) {
-    PdfColor color;
-    PdfColor bgColor;
-    String label;
+  static pw.Widget _buildStatusCell(String estado, pw.TextStyle boldStyle) {
+    final PdfColor color;
+    final PdfColor bgColor;
+    final String label;
 
-    switch (status) {
-      case InvoiceStatus.paid:
+    switch (estado.toLowerCase()) {
+      case 'pagado':
         color = PdfColors.green700;
         bgColor = PdfColor.fromHex('#E8F5E9');
         label = 'PAGADO';
         break;
-      case InvoiceStatus.overdue:
+      case 'vencido':
         color = PdfColors.red700;
         bgColor = PdfColor.fromHex('#FFEBEE');
         label = 'VENCIDO';
         break;
-      case InvoiceStatus.pending:
+      default:
         color = PdfColor.fromHex('#F97316');
         bgColor = PdfColor.fromHex('#FFF3E0');
         label = 'PENDIENTE';
-        break;
     }
 
     return pw.Padding(
@@ -377,10 +333,7 @@ class PdfReportService {
         ),
         child: pw.Text(
           label,
-          style: boldStyle.copyWith(
-            fontSize: 8,
-            color: color,
-          ),
+          style: boldStyle.copyWith(fontSize: 8, color: color),
         ),
       ),
     );
@@ -400,34 +353,27 @@ class PdfReportService {
           children: [
             pw.Text(
               'Generado el $formattedDate',
-              style: baseStyle.copyWith(
-                fontSize: 9,
-                color: PdfColors.grey500,
-              ),
+              style: baseStyle.copyWith(fontSize: 9, color: PdfColors.grey500),
             ),
             pw.Text(
               'Pagina ${context.pageNumber} de ${context.pagesCount}',
-              style: baseStyle.copyWith(
-                fontSize: 9,
-                color: PdfColors.grey500,
-              ),
+              style: baseStyle.copyWith(fontSize: 9, color: PdfColors.grey500),
             ),
           ],
         ),
         pw.SizedBox(height: 4),
         pw.Text(
           'ELECTRICAUTOMATICCHILE - Todos los derechos reservados',
-          style: baseStyle.copyWith(
-            fontSize: 8,
-            color: PdfColors.grey400,
-          ),
+          style: baseStyle.copyWith(fontSize: 8, color: PdfColors.grey400),
         ),
       ],
     );
   }
 
-  static String _formatAmount(double amount) {
-    final formatted = amount.toStringAsFixed(0).replaceAllMapped(
+  static String _formatMonto(double amount) {
+    final formatted = amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );

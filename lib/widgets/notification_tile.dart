@@ -25,9 +25,9 @@ class NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final config = notification.config;
-    
+
     // Opacidad reducida para notificaciones leídas
-    final contentOpacity = notification.isRead ? 0.6 : 1.0;
+    final contentOpacity = notification.leida ? 0.6 : 1.0;
 
     final tileContent = InkWell(
       onTap: onTap,
@@ -50,15 +50,11 @@ class NotificationTile extends StatelessWidget {
                   color: config.color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  config.icon,
-                  size: 22,
-                  color: config.color,
-                ),
+                child: Icon(config.icon, size: 22, color: config.color),
               ),
             ),
             SizedBox(width: AppSpacing.md),
-            
+
             // Contenido principal
             Expanded(
               child: Opacity(
@@ -68,23 +64,24 @@ class NotificationTile extends StatelessWidget {
                   children: [
                     // Título
                     Text(
-                      notification.title,
-                      style: (isDark
-                              ? AppTypography.bodyDark
-                              : AppTypography.bodyLight)
-                          .copyWith(
-                        fontWeight: notification.isRead
-                            ? FontWeight.w400
-                            : FontWeight.w600,
-                      ),
+                      notification.titulo,
+                      style:
+                          (isDark
+                                  ? AppTypography.bodyDark
+                                  : AppTypography.bodyLight)
+                              .copyWith(
+                                fontWeight: notification.leida
+                                    ? FontWeight.w400
+                                    : FontWeight.w600,
+                              ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: AppSpacing.xs / 2),
-                    
+
                     // Descripción
                     Text(
-                      notification.description,
+                      notification.mensaje,
                       style: isDark
                           ? AppTypography.bodySmallDark
                           : AppTypography.bodySmallLight,
@@ -96,7 +93,7 @@ class NotificationTile extends StatelessWidget {
               ),
             ),
             SizedBox(width: AppSpacing.sm),
-            
+
             // Tiempo relativo e indicador
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -114,9 +111,9 @@ class NotificationTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Indicador de no leído
-                if (!notification.isRead) ...[
+                if (!notification.leida) ...[
                   SizedBox(height: AppSpacing.sm),
                   Container(
                     width: 8,
@@ -178,14 +175,12 @@ class NotificationTile extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.borderDark
-                    : AppColors.border,
+                color: isDark ? AppColors.borderDark : AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             SizedBox(height: AppSpacing.md),
-            
+
             // Notification preview
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -207,11 +202,12 @@ class NotificationTile extends StatelessWidget {
                   SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
-                      notification.title,
-                      style: (isDark
-                              ? AppTypography.bodyDark
-                              : AppTypography.bodyLight)
-                          .copyWith(fontWeight: FontWeight.w600),
+                      notification.titulo,
+                      style:
+                          (isDark
+                                  ? AppTypography.bodyDark
+                                  : AppTypography.bodyLight)
+                              .copyWith(fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -219,14 +215,14 @@ class NotificationTile extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             Divider(
               height: AppSpacing.lg * 2,
               color: isDark ? AppColors.borderDark : AppColors.border,
             ),
-            
+
             // Marcar como leída
-            if (!notification.isRead)
+            if (!notification.leida)
               ListTile(
                 leading: Icon(
                   Icons.mark_email_read_outlined,
@@ -245,7 +241,7 @@ class NotificationTile extends StatelessWidget {
                   onMarkAsRead?.call();
                 },
               ),
-            
+
             // Eliminar
             ListTile(
               leading: const Icon(
@@ -254,17 +250,16 @@ class NotificationTile extends StatelessWidget {
               ),
               title: Text(
                 'Eliminar',
-                style: (isDark
-                        ? AppTypography.bodyDark
-                        : AppTypography.bodyLight)
-                    .copyWith(color: AppColors.danger),
+                style:
+                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                        .copyWith(color: AppColors.danger),
               ),
               onTap: () {
                 Navigator.pop(context);
                 onDismissed?.call();
               },
             ),
-            
+
             SizedBox(height: AppSpacing.md),
           ],
         ),

@@ -8,12 +8,14 @@ class KwhDisplayCard extends StatelessWidget {
   final String value;
   final String unit;
   final String label;
+  final double? costo;
 
   const KwhDisplayCard({
     super.key,
     required this.value,
     this.unit = 'kWh',
     this.label = 'Consumo Actual',
+    this.costo,
   });
 
   @override
@@ -77,8 +79,8 @@ class KwhDisplayCard extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                 ),
-                child: const Text(
-                  'Febrero 2026',
+                child: Text(
+                  _currentPeriod(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -88,9 +90,9 @@ class KwhDisplayCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           SizedBox(height: AppSpacing.xl),
-          
+
           // Main value display
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -119,9 +121,9 @@ class KwhDisplayCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           SizedBox(height: AppSpacing.lg),
-          
+
           // Stats row
           Container(
             padding: EdgeInsets.all(AppSpacing.md),
@@ -132,19 +134,45 @@ class KwhDisplayCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('Promedio diario', '8.2 kWh'),
+                _buildStatItem(
+                  'Costo estimado',
+                  costo != null ? '\$${costo!.toStringAsFixed(0)}' : '--',
+                ),
                 Container(
                   width: 1,
                   height: 30,
                   color: Colors.white.withValues(alpha: 0.3),
                 ),
-                _buildStatItem('vs mes anterior', '-12%', isPositive: true),
+                _buildStatItem(
+                  'Período actual',
+                  _currentPeriod(),
+                  isPositive: false,
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _currentPeriod() {
+    final now = DateTime.now();
+    const months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    return '${months[now.month - 1]} ${now.year}';
   }
 
   Widget _buildStatItem(String label, String value, {bool isPositive = false}) {

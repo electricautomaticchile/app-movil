@@ -3,49 +3,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 
-/// Estado de la factura
-enum InvoiceStatus { paid, overdue, pending }
-
-/// Tipo de factura/servicio
-enum InvoiceType { electricity, maintenance, water }
-
-/// Configuración visual para cada tipo de factura
-class InvoiceTypeConfig {
-  final IconData icon;
-  final Color color;
-  final Color backgroundColor;
-
-  const InvoiceTypeConfig({
-    required this.icon,
-    required this.color,
-    required this.backgroundColor,
-  });
-
-  static InvoiceTypeConfig getConfig(InvoiceType type) {
-    switch (type) {
-      case InvoiceType.electricity:
-        return InvoiceTypeConfig(
-          icon: Icons.receipt_long_outlined,
-          color: AppColors.info,
-          backgroundColor: const Color(0xFFE8F4FD),
-        );
-      case InvoiceType.maintenance:
-        return InvoiceTypeConfig(
-          icon: Icons.bolt,
-          color: AppColors.primary,
-          backgroundColor: const Color(0xFFFFF3E0),
-        );
-      case InvoiceType.water:
-        return InvoiceTypeConfig(
-          icon: Icons.water_drop_outlined,
-          color: const Color(0xFF00BCD4),
-          backgroundColor: const Color(0xFFE0F7FA),
-        );
-    }
-  }
-}
-
-/// Configuración visual para cada estado de factura
+/// Estados según el backend: pagado, pendiente, vencido
 class InvoiceStatusConfig {
   final String label;
   final Color color;
@@ -57,71 +15,97 @@ class InvoiceStatusConfig {
     required this.backgroundColor,
   });
 
-  static InvoiceStatusConfig getConfig(InvoiceStatus status) {
-    switch (status) {
-      case InvoiceStatus.paid:
-        return InvoiceStatusConfig(
+  static InvoiceStatusConfig fromEstado(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pagado':
+        return const InvoiceStatusConfig(
           label: 'PAGADO',
           color: AppColors.success,
-          backgroundColor: const Color(0xFFE8F5E9),
+          backgroundColor: Color(0xFFE8F5E9),
         );
-      case InvoiceStatus.overdue:
-        return InvoiceStatusConfig(
+      case 'vencido':
+        return const InvoiceStatusConfig(
           label: 'VENCIDO',
           color: AppColors.danger,
-          backgroundColor: const Color(0xFFFFEBEE),
+          backgroundColor: Color(0xFFFFEBEE),
         );
-      case InvoiceStatus.pending:
-        return InvoiceStatusConfig(
+      default: // pendiente
+        return const InvoiceStatusConfig(
           label: 'PENDIENTE',
           color: AppColors.primary,
-          backgroundColor: const Color(0xFFFFF3E0),
+          backgroundColor: Color(0xFFFFF3E0),
         );
     }
   }
 }
 
-/// Modelo de factura
+/// Modelo de boleta alineado con BoletaModel del backend
 class Invoice {
   final String id;
-  final String number;
-  final InvoiceType type;
-  final String description;
-  final DateTime date;
-  final double amount;
-  final InvoiceStatus status;
+  final String clienteId;
+  final double monto;
+  final String periodo;
+  final String estado;
+  final DateTime fechaCreacion;
+  final DateTime? fechaPago;
 
   const Invoice({
     required this.id,
-    required this.number,
-    required this.type,
-    required this.description,
-    required this.date,
-    required this.amount,
-    required this.status,
+    required this.clienteId,
+    required this.monto,
+    required this.periodo,
+    required this.estado,
+    required this.fechaCreacion,
+    this.fechaPago,
   });
 
-  /// Configuración visual del tipo
-  InvoiceTypeConfig get typeConfig => InvoiceTypeConfig.getConfig(type);
+  factory Invoice.fromJson(Map<String, dynamic> json) {
+    return Invoice(
+      id: json['id'] ?? '',
+      clienteId: json['clienteId'] ?? '',
+      monto: (json['monto'] as num).toDouble(),
+      periodo: json['periodo'] ?? '',
+      estado: json['estado'] ?? 'pendiente',
+      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
+      fechaPago: json['fechaPago'] != null
+          ? DateTime.parse(json['fechaPago'] as String)
+          : null,
+    );
+  }
 
-  /// Configuración visual del estado
-  InvoiceStatusConfig get statusConfig => InvoiceStatusConfig.getConfig(status);
+  InvoiceStatusConfig get statusConfig =>
+      InvoiceStatusConfig.fromEstado(estado);
 
-  /// Fecha formateada
   String get formattedDate {
     const months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
-    return '${date.day} ${months[date.month - 1]}, ${date.year}';
+    return '${fechaCreacion.day} ${months[fechaCreacion.month - 1]}, ${fechaCreacion.year}';
   }
 
-  /// Monto formateado
-  String get formattedAmount {
-    final formatted = amount.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    );
+  String get formattedMonto {
+    final formatted = monto
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
     return '\$$formatted';
   }
+
+  // Ícono siempre de electricidad ya que la app es solo para clientes eléctricos
+  IconData get icon => Icons.receipt_long_outlined;
+  Color get iconColor => AppColors.info;
+  Color get iconBackground => const Color(0xFFE8F4FD);
 }

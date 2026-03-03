@@ -27,10 +27,10 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
   void initState() {
     super.initState();
     final user = Provider.of<UserProvider>(context, listen: false).user;
-    _nameController = TextEditingController(text: user.name);
-    _emailController = TextEditingController(text: user.email);
-    _phoneController = TextEditingController(text: user.phone);
-    _addressController = TextEditingController(text: user.address);
+    _nameController = TextEditingController(text: user?.nombre ?? '');
+    _emailController = TextEditingController(text: user?.correo ?? '');
+    _phoneController = TextEditingController(text: user?.telefono ?? '');
+    _addressController = TextEditingController(text: user?.direccion ?? '');
   }
 
   @override
@@ -64,10 +64,10 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
     if (_formKey.currentState!.validate()) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.updateUser(
-        name: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text,
-        address: _addressController.text,
+        nombre: _nameController.text,
+        correo: _emailController.text,
+        telefono: _phoneController.text,
+        direccion: _addressController.text,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

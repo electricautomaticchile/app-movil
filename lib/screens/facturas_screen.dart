@@ -26,9 +26,18 @@ class _FacturasScreenState extends State<FacturasScreen> {
   bool _isGeneratingPdf = false;
 
   static const List<String> _months = [
-    'Enero', 'Febrero', 'Marzo', 'Abril',
-    'Mayo', 'Junio', 'Julio', 'Agosto',
-    'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
   ];
 
   @override
@@ -102,7 +111,8 @@ class _FacturasScreenState extends State<FacturasScreen> {
               child: IconCircleButton(
                 icon: Icons.notifications_outlined,
                 showBadge: provider.hasUnread,
-                onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.notifications),
               ),
             );
           },
@@ -146,10 +156,11 @@ class _FacturasScreenState extends State<FacturasScreen> {
                   children: [
                     Text(
                       provider.selectedYear.toString(),
-                      style: (isDark
-                              ? AppTypography.bodyDark
-                              : AppTypography.bodyLight)
-                          .copyWith(fontWeight: FontWeight.w500),
+                      style:
+                          (isDark
+                                  ? AppTypography.bodyDark
+                                  : AppTypography.bodyLight)
+                              .copyWith(fontWeight: FontWeight.w500),
                     ),
                     Icon(
                       Icons.keyboard_arrow_down,
@@ -169,7 +180,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
 
   void _showYearPicker(BuildContext context, InvoiceProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
@@ -193,13 +204,16 @@ class _FacturasScreenState extends State<FacturasScreen> {
                 return ListTile(
                   title: Text(
                     year.toString(),
-                    style: (isDark
-                            ? AppTypography.bodyDark
-                            : AppTypography.bodyLight)
-                        .copyWith(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? AppColors.primary : null,
-                    ),
+                    style:
+                        (isDark
+                                ? AppTypography.bodyDark
+                                : AppTypography.bodyLight)
+                            .copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected ? AppColors.primary : null,
+                            ),
                   ),
                   trailing: isSelected
                       ? const Icon(Icons.check, color: AppColors.primary)
@@ -275,9 +289,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
                 vertical: AppSpacing.xs + 2,
               ),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.borderDark
-                    : const Color(0xFFF5F5F5),
+                color: isDark ? AppColors.borderDark : const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
               ),
               child: Text(
@@ -300,7 +312,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
     return Consumer<InvoiceProvider>(
       builder: (context, provider, child) {
         final invoices = provider.filteredInvoices;
-        
+
         if (invoices.isEmpty) {
           return _buildEmptyState(context);
         }
@@ -316,7 +328,9 @@ class _FacturasScreenState extends State<FacturasScreen> {
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Detalle de factura: ${invoices[index].number}'),
+                    content: Text(
+                      'Detalle de factura: ${invoices[index].periodo}',
+                    ),
                     duration: const Duration(seconds: 2),
                   ),
                 );
@@ -330,7 +344,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       padding: EdgeInsets.all(AppSpacing.xxl),
       child: Center(
@@ -348,10 +362,10 @@ class _FacturasScreenState extends State<FacturasScreen> {
               'No hay facturas para este período',
               style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
                   .copyWith(
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.mutedForeground,
-              ),
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.mutedForeground,
+                  ),
             ),
           ],
         ),
@@ -370,7 +384,9 @@ class _FacturasScreenState extends State<FacturasScreen> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 ),
                 SizedBox(width: AppSpacing.sm),

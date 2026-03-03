@@ -1,28 +1,52 @@
 // path: lib/models/user_model.dart
 
 class UserModel {
-  String name;
-  String email;
-  String phone;
-  String address;
-  bool notificationsEnabled;
+  final String id;
+  String nombre;
+  String correo;
+  String telefono;
+  String direccion;
+  String ciudad;
+  String rut;
+  String numeroCliente;
+  String imagenPerfil;
+  String role;
+  bool activo;
+  bool notificacionesSms;
+  bool requiereCambioPassword;
 
   UserModel({
-    required this.name,
-    required this.email,
-    this.phone = '',
-    this.address = '',
-    this.notificationsEnabled = true,
+    this.id = '',
+    required this.nombre,
+    required this.correo,
+    this.telefono = '',
+    this.direccion = '',
+    this.ciudad = '',
+    this.rut = '',
+    this.numeroCliente = '',
+    this.imagenPerfil = '',
+    this.role = 'cliente',
+    this.activo = true,
+    this.notificacionesSms = false,
+    this.requiereCambioPassword = false,
   });
 
-  // Mock default user
-  static UserModel defaultUser() {
+  factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      name: 'Emmanuel García',
-      email: 'emmanuel@correo.com',
-      phone: '+56 9 1234 5678',
-      address: 'Av. Principal 123, Santiago',
-      notificationsEnabled: true,
+      id: json['_id'] ?? json['id'] ?? '',
+      nombre: json['nombre'] ?? '',
+      correo: json['correo'] ?? '',
+      telefono: json['telefono'] ?? '',
+      direccion: json['direccion'] ?? '',
+      ciudad: json['ciudad'] ?? '',
+      rut: json['rut'] ?? '',
+      numeroCliente: json['numeroCliente'] ?? '',
+      imagenPerfil: json['imagenPerfil'] ?? '',
+      role: json['role'] ?? 'cliente',
+      activo: json['activo'] ?? true,
+      notificacionesSms: json['notificacionesSms'] ?? false,
+      requiereCambioPassword:
+          json['passwordTemporal'] != null && json['passwordTemporal'] != '',
     );
   }
 }

@@ -15,4 +15,5 @@ class AppRoutes {
   static const String support = '/support';
   static const String payments = '/payments';
   static const String remoteControl = '/remote-control';
+  static const String terms = '/terms';
 }

@@ -1,58 +1,54 @@
 // path: lib/models/meter.dart
 
-import 'meter_config.dart';
 import 'reading.dart';
 
 class Meter {
+  final String id;
   final String tipo;
   final String estado;
-  final String clienteAsignado;
-  final String ubicacion;
-  final MeterConfig configuracion;
+  final String clienteId;
+  final String direccion;
+  final Map<String, dynamic> configuracion;
   final DateTime fechaCreacion;
   final String numeroDispositivo;
   final String nombre;
   final bool activo;
-  final String clienteId;
-  final String empresaId;
-  final DateTime fechaActualizacion;
-  final Reading ultimaLectura;
+  final Reading? ultimaLectura;
+  final DateTime? fechaActualizacion;
 
   Meter({
+    required this.id,
     required this.tipo,
     required this.estado,
-    required this.clienteAsignado,
-    required this.ubicacion,
+    required this.clienteId,
+    required this.direccion,
     required this.configuracion,
     required this.fechaCreacion,
     required this.numeroDispositivo,
     required this.nombre,
     required this.activo,
-    required this.clienteId,
-    required this.empresaId,
-    required this.fechaActualizacion,
-    required this.ultimaLectura,
+    this.ultimaLectura,
+    this.fechaActualizacion,
   });
 
   factory Meter.fromJson(Map<String, dynamic> json) {
     return Meter(
-      tipo: json['tipo'] as String,
-      estado: json['estado'] as String,
-      clienteAsignado: json['clienteAsignado'] as String,
-      ubicacion: json['ubicacion'] as String,
-      configuracion: MeterConfig.fromJson(
-        json['configuracion'] as Map<String, dynamic>,
-      ),
+      id: json['id'] ?? '',
+      tipo: json['tipo'] ?? '',
+      estado: json['estado'] ?? '',
+      clienteId: json['clienteId'] ?? '',
+      direccion: json['direccion'] ?? '',
+      configuracion: (json['configuracion'] as Map<String, dynamic>?) ?? {},
       fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
-      numeroDispositivo: json['numeroDispositivo'] as String,
-      nombre: json['nombre'] as String,
-      activo: json['activo'] as bool,
-      clienteId: json['clienteId'] as String,
-      empresaId: json['empresaId'] as String,
-      fechaActualizacion: DateTime.parse(json['fechaActualizacion'] as String),
-      ultimaLectura: Reading.fromJson(
-        json['ultimaLectura'] as Map<String, dynamic>,
-      ),
+      numeroDispositivo: json['numeroDispositivo'] ?? '',
+      nombre: json['nombre'] ?? '',
+      activo: json['activo'] ?? false,
+      ultimaLectura: json['ultimaLectura'] != null
+          ? Reading.fromJson(json['ultimaLectura'] as Map<String, dynamic>)
+          : null,
+      fechaActualizacion: json['fechaActualizacion'] != null
+          ? DateTime.parse(json['fechaActualizacion'] as String)
+          : null,
     );
   }
 }

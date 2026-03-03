@@ -8,6 +8,7 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../theme/theme_provider.dart';
 import '../models/user_provider.dart';
+import '../services/auth_service.dart';
 import '../widgets/settings_header.dart';
 import '../widgets/settings_section_title.dart';
 import '../widgets/settings_tile.dart';
@@ -77,7 +78,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.notifications_outlined,
               title: 'Notificaciones',
               subtitle: 'Recibe alertas importantes',
-              value: userProvider.user.notificationsEnabled,
+              value: userProvider.user?.notificacionesSms ?? false,
               onChanged: (value) {
                 userProvider.toggleNotifications(value);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -111,12 +112,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.description_outlined,
               title: 'Términos y condiciones',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('TODO: Términos y condiciones'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                Navigator.pushNamed(context, AppRoutes.terms);
               },
             ),
 
@@ -128,20 +124,15 @@ class SettingsScreen extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cerrando sesión...'),
-                        duration: Duration(seconds: 1),
-                      ),
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (!context.mounted) return;
+                    context.read<UserProvider>().clearUser();
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.landing,
+                      (route) => false,
                     );
-                    final navigator = Navigator.of(context);
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      navigator.pushNamedAndRemoveUntil(
-                        AppRoutes.landing,
-                        (route) => false,
-                      );
-                    });
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.danger,
@@ -179,10 +170,9 @@ class SettingsScreen extends StatelessWidget {
                   Text(
                     'Versión 2.0.1',
                     style: AppTypography.bodySmall.copyWith(
-                      color:
-                          (isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.mutedForeground)
+                      color: (isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.mutedForeground),
                     ),
                   ),
                   SizedBox(height: AppSpacing.xl),

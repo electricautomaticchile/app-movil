@@ -1,7 +1,10 @@
-// path: lib/screens/login_screen.dart
-
 import 'package:flutter/material.dart';
-import '../utils/client_number_formatter.dart';
+import 'package:provider/provider.dart';
+import '../models/user_provider.dart';
+import '../models/invoice_provider.dart';
+import '../models/notification_provider.dart';
+import '../services/auth_service.dart';
+import '../utils/rut_formatter.dart';
 import '../widgets/screen_container.dart';
 import '../widgets/app_card.dart';
 import '../widgets/primary_button.dart';
@@ -18,25 +21,25 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _clientNumberController = TextEditingController();
+  final _rutController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _clientNumberController.dispose();
+    _rutController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String? _validateClientNumber(String? value) {
+  String? _validateRut(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Por favor ingrese su número de cliente';
+      return 'Por favor ingrese su RUT';
     }
-    final clientNumberRegex = RegExp(r'^\d{7}-\d$');
-    if (!clientNumberRegex.hasMatch(value)) {
-      return 'Formato inválido. Use: 1234567-8';
+    // Acepta formato 12.345.678-9 o 12345678-9
+    if (!RegExp(r'^\d{1,2}\.?\d{3}\.?\d{3}-[\dKk]$').hasMatch(value)) {
+      return 'Formato inválido. Use: 12.345.678-9';
     }
     return null;
   }
@@ -52,30 +55,55 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isLoading = true);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
+    try {
+      final result = await AuthService.login(
+        _rutController.text.trim(),
+        _passwordController.text,
+      );
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Inicio de sesión exitoso'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
-          ),
-        );
+      if (!mounted) return;
 
-        // Navigate to client dashboard
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
-        }
+      // Guardar usuario en provider
+      final userProvider = context.read<UserProvider>();
+      userProvider.setUser(result.user);
+
+      // Cargar datos del usuario en paralelo
+      await Future.wait([
+        context.read<InvoiceProvider>().loadInvoices(result.user.id),
+        context.read<NotificationProvider>().loadNotifications(),
+      ]);
+
+      if (!mounted) return;
+
+      // Si requiere cambio de contraseña, redirigir ahí primero
+      if (result.requiereCambioPassword) {
+        Navigator.pushReplacementNamed(context, AppRoutes.changePassword);
+      } else {
+        Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
       }
+    } catch (e) {
+      if (!mounted) return;
+      String mensaje = 'Error al iniciar sesión';
+      final errorStr = e.toString();
+      if (errorStr.contains('401') || errorStr.contains('credenciales')) {
+        mensaje = 'RUT o contraseña incorrectos';
+      } else if (errorStr.contains('SocketException') ||
+          errorStr.contains('connection')) {
+        mensaje = 'Sin conexión al servidor';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -91,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Back button
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -100,41 +127,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               SizedBox(height: AppSpacing.md),
-
-              // Title
               Text(
-                'Iniciar Sesión como Cliente',
+                'Iniciar Sesión',
                 style: isDark ? AppTypography.h1Dark : AppTypography.h1Light,
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.sm),
-
               Text(
-                'Accede con tu número de cliente',
+                'Accede con tu RUT',
                 style: isDark
                     ? AppTypography.bodyDark
                     : AppTypography.bodyLight,
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.xl),
-
-              // Client number field
               TextFormField(
-                controller: _clientNumberController,
+                controller: _rutController,
                 decoration: const InputDecoration(
-                  labelText: 'Número de Cliente',
-                  hintText: '1234567-8',
+                  labelText: 'RUT',
+                  hintText: '12.345.678-9',
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.next,
-                inputFormatters: [ClientNumberFormatter()],
-                validator: _validateClientNumber,
+                inputFormatters: [RutFormatter()],
+                validator: _validateRut,
                 enabled: !_isLoading,
               ),
               SizedBox(height: AppSpacing.md),
-
-              // Password field
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
@@ -147,9 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                     ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 obscureText: _obscurePassword,
@@ -159,15 +178,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 onFieldSubmitted: (_) => _handleLogin(),
               ),
               SizedBox(height: AppSpacing.xl),
-
-              // Login button
               PrimaryButton(
                 text: 'Entrar',
                 icon: Icons.login,
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
               ),
-
             ],
           ),
         ),

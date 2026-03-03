@@ -1,6 +1,7 @@
 // path: lib/screens/change_password_screen.dart
 
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/shadows.dart';
@@ -55,9 +56,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return null;
   }
 
-  void _handleUpdate() {
-    if (_formKey.currentState!.validate()) {
-      // Simulate password update
+  bool _isLoading = false;
+
+  Future<void> _handleUpdate() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.cambiarPassword(
+        _currentPasswordController.text,
+        _newPasswordController.text,
+      );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Contraseña actualizada exitosamente'),
@@ -65,14 +75,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-
-      // Clear fields
       _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
-
-      // Reset form validation state
       _formKey.currentState!.reset();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al actualizar: ${e.toString()}'),
+          backgroundColor: AppColors.danger,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -127,7 +144,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 SizedBox(height: AppSpacing.xl),
                 ElevatedButton(
-                  onPressed: _handleUpdate,
+                  onPressed: _isLoading ? null : _handleUpdate,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -138,10 +155,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                   ),
-                  child: const Text(
-                    'Actualizar contraseña',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Actualizar contraseña',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),

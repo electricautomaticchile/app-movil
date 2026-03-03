@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/notification_provider.dart';
+import '../models/user_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/consumo_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -96,10 +98,7 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         transitionBuilder: (Widget child, Animation<double> animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
         child: _currentIndex == 0
             ? _HomeContent(
@@ -121,9 +120,13 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
       onTap: (index) => setState(() => _currentIndex = index),
       backgroundColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
       selectedItemColor: AppColors.primary,
-      unselectedItemColor: isDark ? AppColors.textSecondaryDark : AppColors.mutedForeground,
+      unselectedItemColor: isDark
+          ? AppColors.textSecondaryDark
+          : AppColors.mutedForeground,
       type: BottomNavigationBarType.fixed,
-      selectedLabelStyle: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
+      selectedLabelStyle: AppTypography.label.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
       unselectedLabelStyle: AppTypography.label,
       items: const [
         BottomNavigationBarItem(
@@ -142,10 +145,37 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
 }
 
 /// Contenido de Home extraído del dashboard original
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   final void Function(String) onShowSnackBar;
 
   const _HomeContent({super.key, required this.onShowSnackBar});
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  ConsumoResumen? _resumen;
+  bool _loadingConsumo = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConsumo();
+  }
+
+  Future<void> _loadConsumo() async {
+    try {
+      final resumen = await ConsumoService.getResumen();
+      if (mounted)
+        setState(() {
+          _resumen = resumen;
+          _loadingConsumo = false;
+        });
+    } catch (_) {
+      if (mounted) setState(() => _loadingConsumo = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,13 +189,16 @@ class _HomeContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context),
+                _buildHeader(context, isDark),
                 SizedBox(height: AppSpacing.xxl),
 
                 KwhDisplayCard(
-                  value: '245',
+                  value: _loadingConsumo
+                      ? '...'
+                      : _resumen?.consumoActual.toStringAsFixed(2) ?? '--',
                   unit: 'kWh',
                   label: 'Consumo Actual',
+                  costo: _resumen?.costoActual,
                 ),
                 SizedBox(height: AppSpacing.xxl),
 
@@ -185,9 +218,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildHeader(BuildContext context, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -219,12 +250,17 @@ class _HomeContent extends StatelessWidget {
                           ? AppTypography.h2Dark
                           : AppTypography.h2Light,
                     ),
-                    Text(
-                      'Emmanuel',
-                      style: (isDark
-                              ? AppTypography.h2Dark
-                              : AppTypography.h2Light)
-                          .copyWith(color: AppColors.primary),
+                    Consumer<UserProvider>(
+                      builder: (context, userProvider, _) {
+                        return Text(
+                          userProvider.user?.nombre.split(' ').first ?? '',
+                          style:
+                              (isDark
+                                      ? AppTypography.h2Dark
+                                      : AppTypography.h2Light)
+                                  .copyWith(color: AppColors.primary),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -232,18 +268,15 @@ class _HomeContent extends StatelessWidget {
             ),
           ],
         ),
-        Row(
-          children: [
-            Consumer<NotificationProvider>(
-              builder: (context, notificationProvider, child) {
-                return IconCircleButton(
-                  icon: Icons.notifications_outlined,
-                  showBadge: notificationProvider.hasUnread,
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
-                );
-              },
-            ),
-          ],
+        Consumer<NotificationProvider>(
+          builder: (context, notificationProvider, _) {
+            return IconCircleButton(
+              icon: Icons.notifications_outlined,
+              showBadge: notificationProvider.hasUnread,
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.notifications),
+            );
+          },
         ),
       ],
     );
@@ -256,30 +289,29 @@ class _HomeContent extends StatelessWidget {
         QuickAction(
           icon: Icons.receipt_outlined,
           label: 'Facturas',
-          onTap: () => onShowSnackBar('facturas'),
+          onTap: () => widget.onShowSnackBar('facturas'),
         ),
         QuickAction(
           icon: Icons.help_outline,
           label: 'Ayuda',
-          onTap: () => onShowSnackBar('help'),
+          onTap: () => widget.onShowSnackBar('help'),
         ),
         QuickAction(
           icon: Icons.payment_outlined,
           label: 'Pagos',
-          onTap: () => onShowSnackBar('payments'),
+          onTap: () => widget.onShowSnackBar('payments'),
         ),
         QuickAction(
           icon: Icons.power_settings_new,
           label: 'Control',
-          onTap: () => onShowSnackBar('remote_control'),
+          onTap: () => widget.onShowSnackBar('remote_control'),
         ),
         QuickAction(
           icon: Icons.settings_outlined,
           label: 'Ajustes',
-          onTap: () => onShowSnackBar('settings'),
+          onTap: () => widget.onShowSnackBar('settings'),
         ),
       ],
     );
   }
-
 }
