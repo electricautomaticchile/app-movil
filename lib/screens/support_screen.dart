@@ -15,8 +15,8 @@ class SupportScreen extends StatelessWidget {
   static const _textPrimary = Colors.white;
   static const _textSecondary = Color(0xFF888888);
 
-  static const String _phoneNumber = '+56912345678';
-  static const String _displayPhone = '+56 9 1234 5678';
+  static const String _phoneNumber = '+56963567384';
+  static const String _displayPhone = '+56 9 6356 7384';
 
   Future<void> _makePhoneCall() async {
     final Uri phoneUri = Uri(scheme: 'tel', path: _phoneNumber);
@@ -132,18 +132,12 @@ class SupportScreen extends StatelessWidget {
           // Availability text
           const Text(
             'Disponible de 09:00 a 18:00',
-            style: TextStyle(
-              color: _textSecondary,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: _textSecondary, fontSize: 14),
           ),
           SizedBox(height: AppSpacing.sm),
           const Text(
             'Lunes a Viernes',
-            style: TextStyle(
-              color: _textSecondary,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: _textSecondary, fontSize: 13),
           ),
         ],
       ),
@@ -161,10 +155,7 @@ class SupportScreen extends StatelessWidget {
           icon: const Icon(Icons.phone, size: 22),
           label: const Text(
             'Llamar ahora',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: _primaryOrange,
