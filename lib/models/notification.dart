@@ -89,7 +89,7 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       destinatarioId: json['destinatarioId'] ?? '',
       dispositivoId: json['dispositivoId'],
       titulo: json['titulo'] ?? '',
@@ -99,7 +99,9 @@ class AppNotification {
       leida: json['leida'] ?? false,
       resuelta: json['resuelta'] ?? false,
       importante: json['importante'] ?? false,
-      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
+      fechaCreacion:
+          DateTime.tryParse(json['fechaCreacion'] ?? json['createdAt'] ?? '') ??
+          DateTime.now(),
     );
   }
 

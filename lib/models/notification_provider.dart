@@ -36,7 +36,7 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void markAllAsRead() {
+  Future<void> markAllAsRead() async {
     bool changed = false;
     for (int i = 0; i < _notifications.length; i++) {
       if (!_notifications[i].leida) {
@@ -44,7 +44,12 @@ class NotificationProvider extends ChangeNotifier {
         changed = true;
       }
     }
-    if (changed) notifyListeners();
+    if (changed) {
+      notifyListeners();
+      try {
+        await NotificationService.markAllAsRead();
+      } catch (_) {}
+    }
   }
 
   Future<void> deleteNotification(String id) async {

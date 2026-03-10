@@ -6,6 +6,7 @@ import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/shadows.dart';
 import '../models/user_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/settings_header.dart';
 import '../widgets/settings_text_field.dart';
 
@@ -60,26 +61,54 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
     return null;
   }
 
-  void _handleSave() {
-    if (_formKey.currentState!.validate()) {
+  bool _isSaving = false;
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+    try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final userId = userProvider.user?.id ?? '';
+
+      await ApiService.dio.put(
+        '/clientes/$userId',
+        data: {
+          'nombre': _nameController.text.trim(),
+          'correo': _emailController.text.trim(),
+          'telefono': _phoneController.text.trim(),
+          'direccion': _addressController.text.trim(),
+        },
+      );
+
       userProvider.updateUser(
-        nombre: _nameController.text,
-        correo: _emailController.text,
-        telefono: _phoneController.text,
-        direccion: _addressController.text,
+        nombre: _nameController.text.trim(),
+        correo: _emailController.text.trim(),
+        telefono: _phoneController.text.trim(),
+        direccion: _addressController.text.trim(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cambios guardados exitosamente'),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Optional: pop back to settings
-      // Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cambios guardados exitosamente'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudieron guardar los cambios'),
+            backgroundColor: AppColors.danger,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -140,7 +169,7 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
                 ),
                 SizedBox(height: AppSpacing.xl),
                 ElevatedButton(
-                  onPressed: _handleSave,
+                  onPressed: _isSaving ? null : _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -151,10 +180,24 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
                       ),
                     ),
                   ),
-                  child: const Text(
-                    'Guardar cambios',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Guardar cambios',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),

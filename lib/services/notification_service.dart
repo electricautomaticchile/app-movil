@@ -9,7 +9,11 @@ class NotificationService {
   }
 
   static Future<void> markAsRead(String id) async {
-    await ApiService.dio.put('/notificaciones/$id', data: {'leida': true});
+    await ApiService.dio.put('/notificaciones/$id/marcar-leida');
+  }
+
+  static Future<void> markAllAsRead() async {
+    await ApiService.dio.put('/notificaciones/marcar-todas-leidas');
   }
 
   static Future<void> delete(String id) async {
