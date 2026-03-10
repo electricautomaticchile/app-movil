@@ -1,10 +1,10 @@
-// path: lib/screens/remote_control_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/user_provider.dart';
+import '../services/dispositivo_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
-import '../widgets/settings_header.dart';
 import '../widgets/app_card.dart';
 import '../widgets/status_badge.dart';
 
@@ -17,29 +17,14 @@ class RemoteControlScreen extends StatefulWidget {
 
 class _RemoteControlScreenState extends State<RemoteControlScreen>
     with SingleTickerProviderStateMixin {
-  bool _isServiceActive = true;
+  EstadoServicio? _estado;
+  List<HistorialAccion> _history = [];
+  bool _isLoading = true;
   bool _isProcessing = false;
+  String? _error;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-
-  // Historial de acciones simulado
-  final List<_ActionHistory> _history = [
-    _ActionHistory(
-      action: 'Reconexión',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      success: true,
-    ),
-    _ActionHistory(
-      action: 'Corte',
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      success: true,
-    ),
-    _ActionHistory(
-      action: 'Reconexión',
-      date: DateTime.now().subtract(const Duration(days: 30)),
-      success: true,
-    ),
-  ];
 
   @override
   void initState() {
@@ -48,10 +33,10 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _loadData();
   }
 
   @override
@@ -60,21 +45,61 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
     super.dispose();
   }
 
-  void _toggleService() async {
-    if (_isProcessing) return;
+  String get _clienteId => context.read<UserProvider>().user?.id ?? '';
 
-    final bool willDeactivate = _isServiceActive;
-    final String action = willDeactivate ? 'corte' : 'reconexión';
+  Future<void> _loadData() async {
+    if (_clienteId.isEmpty) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        DispositivoService.getEstadoServicio(_clienteId),
+        DispositivoService.getHistorialAcciones(_clienteId),
+      ]);
+      if (mounted) {
+        setState(() {
+          _estado = results[0] as EstadoServicio;
+          _history = results[1] as List<HistorialAccion>;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'No se pudo cargar el estado del servicio';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
-    // Mostrar diálogo de confirmación
+  Future<void> _toggleService() async {
+    if (_isProcessing || _estado == null) return;
+
+    final willDeactivate = _estado!.isActivo;
+    final actionLabel = willDeactivate ? 'corte' : 'reconexión';
+
+    // Bloquear reconexión si tiene demasiadas boletas pendientes
+    if (!willDeactivate && !_estado!.puedeRestablecer) {
+      _showSnack(
+        'No puedes restablecer con ${_estado!.boletasPendientes} boletas pendientes',
+        isError: true,
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => _ConfirmationDialog(
+      builder: (_) => _ConfirmationDialog(
         title: willDeactivate ? 'Confirmar Corte' : 'Confirmar Reconexión',
         message: willDeactivate
             ? '¿Estás seguro de que deseas solicitar el corte del servicio?'
             : '¿Estás seguro de que deseas solicitar la reconexión del servicio?',
-        confirmLabel: willDeactivate ? 'Solicitar Corte' : 'Solicitar Reconexión',
+        confirmLabel: willDeactivate
+            ? 'Solicitar Corte'
+            : 'Solicitar Reconexión',
         isDanger: willDeactivate,
       ),
     );
@@ -83,31 +108,43 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
 
     setState(() => _isProcessing = true);
 
-    // Simular procesamiento
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final nuevoEstado = willDeactivate
+          ? await DispositivoService.cortarServicio(_clienteId)
+          : await DispositivoService.restablecerServicio(_clienteId);
 
-    if (mounted) {
-      setState(() {
-        _isServiceActive = !_isServiceActive;
-        _isProcessing = false;
-        _history.insert(
-          0,
-          _ActionHistory(
-            action: willDeactivate ? 'Corte' : 'Reconexión',
-            date: DateTime.now(),
-            success: true,
-          ),
-        );
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Solicitud de $action procesada correctamente'),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _estado = nuevoEstado;
+          _isProcessing = false;
+          // Agregar al historial local inmediatamente
+          _history.insert(
+            0,
+            HistorialAccion(
+              accion: willDeactivate ? 'Corte' : 'Reconexión',
+              fecha: DateTime.now(),
+              exitoso: true,
+            ),
+          );
+        });
+        _showSnack('Solicitud de $actionLabel procesada correctamente');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+      }
     }
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -115,90 +152,140 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF1A1A1A) : AppColors.backgroundLight,
-      appBar: const SettingsHeader(title: 'Control Remoto'),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status Card
-            _buildStatusCard(isDark),
-            SizedBox(height: AppSpacing.xl),
-
-            // Power Button
-            _buildPowerButton(isDark),
-            SizedBox(height: AppSpacing.lg),
-
-            // Warning info
-            _buildWarningInfo(isDark),
-            SizedBox(height: AppSpacing.xxl),
-
-            // History section
-            _buildHistorySection(isDark),
-          ],
+      backgroundColor: isDark
+          ? const Color(0xFF1A1A1A)
+          : AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: isDark
+            ? const Color(0xFF1A1A1A)
+            : AppColors.backgroundLight,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'Control Remoto',
+          style: (isDark ? AppTypography.h3Dark : AppTypography.h3Light)
+              .copyWith(fontSize: 18),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
+            ),
+            onPressed: _isLoading ? null : _loadData,
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? _buildError()
+          : _buildBody(isDark),
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.wifi_off_outlined,
+            size: 48,
+            color: AppColors.mutedForeground,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            _error!,
+            style: AppTypography.bodyLight.copyWith(
+              color: AppColors.mutedForeground,
+            ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(bool isDark) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.screenPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatusCard(isDark),
+          SizedBox(height: AppSpacing.xl),
+          _buildPowerButton(isDark),
+          SizedBox(height: AppSpacing.lg),
+          if (_estado!.boletasPendientes > 0) _buildDeudaWarning(isDark),
+          if (_estado!.boletasPendientes > 0) SizedBox(height: AppSpacing.lg),
+          _buildWarningInfo(isDark),
+          SizedBox(height: AppSpacing.xxl),
+          _buildHistorySection(isDark),
+        ],
       ),
     );
   }
 
   Widget _buildStatusCard(bool isDark) {
+    final isActivo = _estado!.isActivo;
     return AppCard(
       child: Column(
         children: [
-          // Animated Icon
           AnimatedBuilder(
             animation: _pulseAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _isServiceActive ? _pulseAnimation.value : 1.0,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: _isServiceActive
-                        ? AppColors.success.withValues(alpha: 0.15)
-                        : AppColors.danger.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _isServiceActive ? Icons.bolt : Icons.power_off,
-                    size: 40,
-                    color: _isServiceActive ? AppColors.success : AppColors.danger,
-                  ),
+            builder: (context, _) => Transform.scale(
+              scale: isActivo ? _pulseAnimation.value : 1.0,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: isActivo
+                      ? AppColors.success.withValues(alpha: 0.15)
+                      : AppColors.danger.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
+                child: Icon(
+                  isActivo ? Icons.bolt : Icons.power_off,
+                  size: 40,
+                  color: isActivo ? AppColors.success : AppColors.danger,
+                ),
+              ),
+            ),
           ),
           SizedBox(height: AppSpacing.md),
-
-          // Status text
           Text(
-            _isServiceActive ? 'Servicio Activo' : 'Servicio Cortado',
-            style: (isDark ? AppTypography.h3Dark : AppTypography.h3Light),
+            isActivo ? 'Servicio Activo' : 'Servicio Cortado',
+            style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
           ),
           SizedBox(height: AppSpacing.sm),
-
-          // Status badge
           StatusBadge(
-            label: _isServiceActive ? 'ACTIVO' : 'CORTADO',
-            color: _isServiceActive ? AppColors.success : AppColors.danger,
-            backgroundColor: _isServiceActive
+            label: isActivo ? 'ACTIVO' : 'CORTADO',
+            color: isActivo ? AppColors.success : AppColors.danger,
+            backgroundColor: isActivo
                 ? AppColors.success.withValues(alpha: 0.1)
                 : AppColors.danger.withValues(alpha: 0.1),
           ),
           SizedBox(height: AppSpacing.md),
-
-          // Last update
           Text(
-            'Última actualización: Hoy, 10:30 AM',
-            style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
-                .copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.mutedForeground,
-            ),
+            'Última actualización: ${_formatDateTime(_estado!.ultimaActualizacion)}',
+            style:
+                (isDark
+                        ? AppTypography.bodySmallDark
+                        : AppTypography.bodySmallLight)
+                    .copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.mutedForeground,
+                    ),
           ),
         ],
       ),
@@ -206,23 +293,22 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
   }
 
   Widget _buildPowerButton(bool isDark) {
+    final isActivo = _estado!.isActivo;
     return Center(
       child: Column(
         children: [
           Text(
-            _isServiceActive
+            isActivo
                 ? 'Toca para solicitar corte'
                 : 'Toca para solicitar reconexión',
             style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
                 .copyWith(
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.mutedForeground,
-            ),
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.mutedForeground,
+                ),
           ),
           SizedBox(height: AppSpacing.md),
-
-          // Big power button
           GestureDetector(
             onTap: _isProcessing ? null : _toggleService,
             child: AnimatedContainer(
@@ -239,19 +325,19 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
                           AppColors.mutedForeground,
                           AppColors.mutedForeground.withValues(alpha: 0.7),
                         ]
-                      : _isServiceActive
-                          ? [
-                              AppColors.danger,
-                              AppColors.danger.withValues(alpha: 0.8),
-                            ]
-                          : [
-                              AppColors.success,
-                              AppColors.success.withValues(alpha: 0.8),
-                            ],
+                      : isActivo
+                      ? [
+                          AppColors.danger,
+                          AppColors.danger.withValues(alpha: 0.8),
+                        ]
+                      : [
+                          AppColors.success,
+                          AppColors.success.withValues(alpha: 0.8),
+                        ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (_isServiceActive ? AppColors.danger : AppColors.success)
+                    color: (isActivo ? AppColors.danger : AppColors.success)
                         .withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: 2,
@@ -265,12 +351,13 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
                         height: 40,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       ),
                     )
-                  : Icon(
+                  : const Icon(
                       Icons.power_settings_new,
                       size: 56,
                       color: Colors.white,
@@ -278,13 +365,39 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
             ),
           ),
           SizedBox(height: AppSpacing.md),
-
           Text(
-            _isServiceActive ? 'CORTAR SERVICIO' : 'RECONECTAR SERVICIO',
+            isActivo ? 'CORTAR SERVICIO' : 'RECONECTAR SERVICIO',
             style: AppTypography.label.copyWith(
-              color: _isServiceActive ? AppColors.danger : AppColors.success,
+              color: isActivo ? AppColors.danger : AppColors.success,
               fontWeight: FontWeight.w600,
               letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeudaWarning(bool isDark) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 24),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              '${_estado!.boletasPendientes} boleta(s) pendiente(s) — Deuda: \$${_estado!.montoDeuda.toStringAsFixed(0)}',
+              style:
+                  (isDark
+                          ? AppTypography.bodySmallDark
+                          : AppTypography.bodySmallLight)
+                      .copyWith(color: AppColors.danger),
             ),
           ),
         ],
@@ -298,25 +411,20 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
       decoration: BoxDecoration(
         color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: AppColors.info.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: AppColors.info,
-            size: 24,
-          ),
+          Icon(Icons.info_outline, color: AppColors.info, size: 24),
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               'Las solicitudes pueden tardar hasta 24 horas en procesarse. Recibirás una notificación cuando se complete.',
-              style: (isDark
-                      ? AppTypography.bodySmallDark
-                      : AppTypography.bodySmallLight)
-                  .copyWith(color: AppColors.info),
+              style:
+                  (isDark
+                          ? AppTypography.bodySmallDark
+                          : AppTypography.bodySmallLight)
+                      .copyWith(color: AppColors.info),
             ),
           ),
         ],
@@ -333,51 +441,47 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
           style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
         ),
         SizedBox(height: AppSpacing.md),
-
         if (_history.isEmpty)
           Center(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.xl),
               child: Text(
                 'No hay acciones registradas',
-                style: (isDark
-                        ? AppTypography.bodyDark
-                        : AppTypography.bodyLight)
-                    .copyWith(
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.mutedForeground,
-                ),
+                style:
+                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                        .copyWith(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.mutedForeground,
+                        ),
               ),
             ),
           )
         else
-          ...List.generate(_history.length, (index) {
-            final item = _history[index];
+          ...List.generate(_history.length, (i) {
+            final item = _history[i];
             return _HistoryTile(
-              action: item.action,
-              date: item.date,
-              success: item.success,
-              isLast: index == _history.length - 1,
+              action: item.accion,
+              date: item.fecha,
+              success: item.exitoso,
+              isLast: i == _history.length - 1,
             );
           }),
       ],
     );
   }
+
+  String _formatDateTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Ahora mismo';
+    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Hace ${diff.inHours} h';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
 }
 
-class _ActionHistory {
-  final String action;
-  final DateTime date;
-  final bool success;
-
-  _ActionHistory({
-    required this.action,
-    required this.date,
-    required this.success,
-  });
-}
-
+// ── History Tile ──────────────────────────────────────────────────────────────
 class _HistoryTile extends StatelessWidget {
   final String action;
   final DateTime date;
@@ -392,20 +496,12 @@ class _HistoryTile extends StatelessWidget {
   });
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inDays == 0) {
-      return 'Hoy';
-    } else if (diff.inDays == 1) {
-      return 'Ayer';
-    } else if (diff.inDays < 7) {
-      return 'Hace ${diff.inDays} días';
-    } else if (diff.inDays < 30) {
-      return 'Hace ${(diff.inDays / 7).floor()} semanas';
-    } else {
-      return 'Hace ${(diff.inDays / 30).floor()} meses';
-    }
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays == 0) return 'Hoy';
+    if (diff.inDays == 1) return 'Ayer';
+    if (diff.inDays < 7) return 'Hace ${diff.inDays} días';
+    if (diff.inDays < 30) return 'Hace ${(diff.inDays / 7).floor()} semanas';
+    return 'Hace ${(diff.inDays / 30).floor()} meses';
   }
 
   @override
@@ -449,20 +545,23 @@ class _HistoryTile extends StatelessWidget {
                 Text(
                   action,
                   style:
-                      (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                      (isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight)
                           .copyWith(fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: AppSpacing.xs),
                 Text(
                   _formatDate(date),
-                  style: (isDark
-                          ? AppTypography.bodySmallDark
-                          : AppTypography.bodySmallLight)
-                      .copyWith(
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.mutedForeground,
-                  ),
+                  style:
+                      (isDark
+                              ? AppTypography.bodySmallDark
+                              : AppTypography.bodySmallLight)
+                          .copyWith(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.mutedForeground,
+                          ),
                 ),
               ],
             ),
@@ -481,6 +580,7 @@ class _HistoryTile extends StatelessWidget {
   }
 }
 
+// ── Confirmation Dialog ───────────────────────────────────────────────────────
 class _ConfirmationDialog extends StatelessWidget {
   final String title;
   final String message;
@@ -497,10 +597,10 @@ class _ConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AlertDialog(
-      backgroundColor:
-          isDark ? AppColors.cardBackgroundDark : AppColors.cardBackgroundLight,
+      backgroundColor: isDark
+          ? AppColors.cardBackgroundDark
+          : AppColors.cardBackgroundLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),

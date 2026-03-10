@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_provider.dart';
 import '../services/consumo_service.dart';
+import '../services/websocket_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -18,15 +19,61 @@ class MiConsumoScreen extends StatefulWidget {
 class _MiConsumoScreenState extends State<MiConsumoScreen> {
   bool _isLoading = true;
   String? _error;
+  bool _wsConnected = false;
 
   ConsumoResumen? _resumen;
   List<HistorialPunto> _historialMesActual = [];
   List<HistorialPunto> _historialMesAnterior = [];
 
+  // Valores en vivo desde WebSocket (sobreescriben los de HTTP)
+  double? _liveKwh;
+  double? _liveCosto;
+  double? _liveVoltaje;
+  double? _liveCorriente;
+  double? _livePotencia;
+
+  late final WebSocketService _ws;
+
   @override
   void initState() {
     super.initState();
+    _ws = WebSocketService()
+      ..onConnected = () {
+        if (mounted) setState(() => _wsConnected = true);
+      }
+      ..onDisconnected = () {
+        if (mounted) setState(() => _wsConnected = false);
+      }
+      ..onDeviceUpdate = _onWsUpdate;
+    _ws.connect();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _ws.dispose();
+    super.dispose();
+  }
+
+  void _onWsUpdate(Map<String, dynamic> data) {
+    if (!mounted) return;
+    setState(() {
+      _liveKwh =
+          (data['energia'] as num?)?.toDouble() ??
+          (data['energy'] as num?)?.toDouble();
+      _liveCosto =
+          (data['costo'] as num?)?.toDouble() ??
+          (data['cost'] as num?)?.toDouble();
+      _liveVoltaje =
+          (data['voltaje'] as num?)?.toDouble() ??
+          (data['voltage'] as num?)?.toDouble();
+      _liveCorriente =
+          (data['corriente'] as num?)?.toDouble() ??
+          (data['current'] as num?)?.toDouble();
+      _livePotencia =
+          (data['potenciaActiva'] as num?)?.toDouble() ??
+          (data['activePower'] as num?)?.toDouble();
+    });
   }
 
   Future<void> _loadData() async {
@@ -34,10 +81,8 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
       _isLoading = true;
       _error = null;
     });
-
     try {
       final clienteId = context.read<UserProvider>().user?.id ?? '';
-
       final results = await Future.wait([
         ConsumoService.getResumen(),
         ConsumoService.getHistorial(clienteId, 'dia'),
@@ -46,7 +91,6 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
       final resumen = results[0] as ConsumoResumen;
       final historial = results[1] as List<HistorialPunto>;
 
-      // Separar mes actual y mes anterior
       final now = DateTime.now();
       final mesActualStr =
           '${now.year}-${now.month.toString().padLeft(2, '0')}';
@@ -77,13 +121,11 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
     return puntos.map((p) => p.energiaTotal).toList();
   }
 
-  double _totalKwh(List<HistorialPunto> puntos) {
-    if (puntos.isEmpty) return 0;
-    return puntos.fold(0.0, (sum, p) => sum + p.energiaTotal);
-  }
+  double _totalKwh(List<HistorialPunto> puntos) =>
+      puntos.fold(0.0, (sum, p) => sum + p.energiaTotal);
 
   double _percentChange() {
-    final actual = _totalKwh(_historialMesActual);
+    final actual = _liveKwh ?? _totalKwh(_historialMesActual);
     final anterior = _totalKwh(_historialMesAnterior);
     if (anterior == 0) return 0;
     return double.parse(
@@ -111,9 +153,21 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Mi Consumo',
-          style: isDark ? AppTypography.h2Dark : AppTypography.h2Light,
+        title: Row(
+          children: [
+            Text(
+              'Mi Consumo',
+              style: isDark ? AppTypography.h2Dark : AppTypography.h2Light,
+            ),
+            SizedBox(width: AppSpacing.sm),
+            // Indicador WebSocket en vivo
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _wsConnected
+                  ? _WsLiveDot(key: const ValueKey('on'))
+                  : const SizedBox.shrink(key: ValueKey('off')),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -159,7 +213,8 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
 
   Widget _buildContent(bool isDark) {
     final resumen = _resumen!;
-    final consumoKwh = resumen.consumoActual;
+    // Preferir valor en vivo del WS, si no hay usar el de HTTP
+    final consumoKwh = _liveKwh ?? resumen.consumoActual;
     final pct = _percentChange();
 
     return SafeArea(
@@ -174,7 +229,6 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
             ),
             SizedBox(height: AppSpacing.xxl),
 
-            // Consumo actual
             MetricCard(
               label: 'Consumo Actual',
               value: consumoKwh.toStringAsFixed(2),
@@ -183,14 +237,16 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
               chartData: _toChartData(_historialMesActual),
             ),
 
-            // Métricas eléctricas si hay última lectura
-            if (resumen.voltaje != null) ...[
+            // Métricas eléctricas en vivo (WS tiene prioridad)
+            if (_liveVoltaje != null ||
+                _liveCorriente != null ||
+                _livePotencia != null ||
+                resumen.voltaje != null) ...[
               SizedBox(height: AppSpacing.lg),
               _buildElectricMetrics(isDark, resumen),
             ],
 
             SizedBox(height: AppSpacing.xxl),
-
             Text(
               'Comparativa Mensual',
               style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
@@ -212,7 +268,7 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
                 Expanded(
                   child: HistoricalCard(
                     label: 'Mes Actual',
-                    value: _totalKwh(_historialMesActual).toStringAsFixed(1),
+                    value: consumoKwh.toStringAsFixed(1),
                     unit: 'kWh',
                     borderColor: AppColors.success,
                     chartData: _toChartData(_historialMesActual),
@@ -222,7 +278,7 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
             ),
 
             SizedBox(height: AppSpacing.xxl),
-            _buildInfoCard(context, isDark),
+            _buildInfoCard(isDark),
           ],
         ),
       ),
@@ -230,33 +286,37 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
   }
 
   Widget _buildElectricMetrics(bool isDark, ConsumoResumen resumen) {
+    final voltaje = _liveVoltaje ?? resumen.voltaje;
+    final corriente = _liveCorriente ?? resumen.corriente;
+    final potencia = _livePotencia ?? resumen.potenciaActiva;
+
     return Row(
       children: [
-        if (resumen.voltaje != null)
+        if (voltaje != null)
           Expanded(
             child: _metricChip(
               isDark,
-              '${resumen.voltaje!.toStringAsFixed(1)} V',
+              '${voltaje.toStringAsFixed(1)} V',
               'Voltaje',
               Icons.electric_bolt,
             ),
           ),
-        SizedBox(width: AppSpacing.sm),
-        if (resumen.corriente != null)
+        if (voltaje != null) SizedBox(width: AppSpacing.sm),
+        if (corriente != null)
           Expanded(
             child: _metricChip(
               isDark,
-              '${resumen.corriente!.toStringAsFixed(2)} A',
+              '${corriente.toStringAsFixed(2)} A',
               'Corriente',
               Icons.electrical_services,
             ),
           ),
-        SizedBox(width: AppSpacing.sm),
-        if (resumen.potenciaActiva != null)
+        if (corriente != null) SizedBox(width: AppSpacing.sm),
+        if (potencia != null)
           Expanded(
             child: _metricChip(
               isDark,
-              '${resumen.potenciaActiva!.toStringAsFixed(1)} W',
+              '${potencia.toStringAsFixed(1)} W',
               'Potencia',
               Icons.power,
             ),
@@ -272,7 +332,9 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
         color: isDark ? AppColors.cardBackgroundDark : Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          color: _wsConnected
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : (isDark ? AppColors.borderDark : AppColors.borderLight),
         ),
       ),
       child: Column(
@@ -296,7 +358,7 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, bool isDark) {
+  Widget _buildInfoCard(bool isDark) {
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -352,6 +414,64 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── WS Live Dot ───────────────────────────────────────────────────────────────
+class _WsLiveDot extends StatefulWidget {
+  const _WsLiveDot({super.key});
+
+  @override
+  State<_WsLiveDot> createState() => _WsLiveDotState();
+}
+
+class _WsLiveDotState extends State<_WsLiveDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _anim,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'En vivo',
+            style: AppTypography.label.copyWith(
+              color: AppColors.success,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
