@@ -3,8 +3,6 @@
 import 'package:flutter/material.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
-import '../theme/colors.dart';
-import '../theme/shadows.dart';
 
 class BrandHeader extends StatelessWidget {
   const BrandHeader({super.key});
@@ -15,22 +13,12 @@ class BrandHeader extends StatelessWidget {
 
     return Column(
       children: [
-        // Lightning bolt icon in white square
-        Container(
+        // Logo image
+        Image.asset(
+          'assets/images/logo.png',
           width: AppSpacing.brandIconSize,
           height: AppSpacing.brandIconSize,
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.iconBackgroundDark
-                : AppColors.iconBackgroundLight,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            boxShadow: isDark ? AppShadows.iconDark : AppShadows.iconLight,
-          ),
-          child: const Icon(
-            Icons.flash_on,
-            color: AppColors.primaryOrange,
-            size: AppSpacing.iconXl,
-          ),
+          fit: BoxFit.contain,
         ),
         SizedBox(height: AppSpacing.lg),
 

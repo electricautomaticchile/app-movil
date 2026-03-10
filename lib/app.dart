@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'main.dart' show navigatorKey;
 import 'theme/theme_provider.dart';
 import 'routes/app_routes.dart';
 import 'screens/landing_screen.dart';
@@ -30,6 +31,7 @@ class ElectricApp extends StatelessWidget {
         return MaterialApp(
           title: 'Electricautomaticchile',
           debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
 
           // Theme configuration
           theme: ThemeProvider.lightTheme,
