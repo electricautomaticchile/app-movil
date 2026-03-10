@@ -69,10 +69,9 @@ class _PersonalDataScreenState extends State<PersonalDataScreen> {
     setState(() => _isSaving = true);
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.user?.id ?? '';
 
       await ApiService.dio.put(
-        '/clientes/$userId',
+        '/dashboard/cliente/perfil',
         data: {
           'nombre': _nameController.text.trim(),
           'correo': _emailController.text.trim(),
