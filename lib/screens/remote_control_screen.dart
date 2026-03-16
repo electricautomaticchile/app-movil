@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:local_auth/local_auth.dart';
 import '../models/user_provider.dart';
 import '../services/dispositivo_service.dart';
 import '../theme/colors.dart';
@@ -22,6 +23,7 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
   bool _isLoading = true;
   bool _isProcessing = false;
   String? _error;
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -105,6 +107,33 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
     );
 
     if (confirmed != true) return;
+
+    // C-06: Requerir autenticación biométrica para acciones críticas
+    try {
+      final canAuth =
+          await _localAuth.canCheckBiometrics ||
+          await _localAuth.isDeviceSupported();
+      if (canAuth) {
+        final didAuth = await _localAuth.authenticate(
+          localizedReason:
+              'Confirma tu identidad para $actionLabel del servicio',
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            biometricOnly: false,
+          ),
+        );
+        if (!didAuth) {
+          if (mounted)
+            _showSnack(
+              'Autenticación requerida para esta acción',
+              isError: true,
+            );
+          return;
+        }
+      }
+    } catch (_) {
+      // Si biometría no disponible, continuar con la confirmación del diálogo
+    }
 
     setState(() => _isProcessing = true);
 

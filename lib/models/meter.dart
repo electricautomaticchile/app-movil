@@ -31,6 +31,13 @@ class Meter {
     this.fechaActualizacion,
   });
 
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
+    if (value is String)
+      return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
   factory Meter.fromJson(Map<String, dynamic> json) {
     return Meter(
       id: json['id'] ?? '',
@@ -39,16 +46,16 @@ class Meter {
       clienteId: json['clienteId'] ?? '',
       direccion: json['direccion'] ?? '',
       configuracion: (json['configuracion'] as Map<String, dynamic>?) ?? {},
-      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
+      fechaCreacion: _parseDate(json['fechaCreacion']),
       numeroDispositivo: json['numeroDispositivo'] ?? '',
       nombre: json['nombre'] ?? '',
       activo: json['activo'] ?? false,
-      ultimaLectura: json['ultimaLectura'] != null
+      ultimaLectura:
+          json['ultimaLectura'] != null &&
+              json['ultimaLectura'] is Map<String, dynamic>
           ? Reading.fromJson(json['ultimaLectura'] as Map<String, dynamic>)
           : null,
-      fechaActualizacion: json['fechaActualizacion'] != null
-          ? DateTime.parse(json['fechaActualizacion'] as String)
-          : null,
+      fechaActualizacion: _parseDate(json['fechaActualizacion']),
     );
   }
 }

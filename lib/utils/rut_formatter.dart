@@ -44,3 +44,29 @@ class RutFormatter extends TextInputFormatter {
     );
   }
 }
+
+// A-05: Validación de dígito verificador del RUT chileno (módulo 11)
+bool validarRut(String rut) {
+  final clean = rut.replaceAll('.', '').replaceAll('-', '').toUpperCase();
+  if (clean.length < 2) return false;
+
+  final dv = clean[clean.length - 1];
+  final body = clean.substring(0, clean.length - 1);
+
+  // Verificar que el cuerpo sea numérico
+  if (!RegExp(r'^\d+$').hasMatch(body)) return false;
+
+  int sum = 0, mul = 2;
+  for (int i = body.length - 1; i >= 0; i--) {
+    sum += int.parse(body[i]) * mul;
+    mul = mul == 7 ? 2 : mul + 1;
+  }
+
+  final remainder = 11 - (sum % 11);
+  final expected = remainder == 11
+      ? '0'
+      : remainder == 10
+      ? 'K'
+      : '$remainder';
+  return dv == expected;
+}

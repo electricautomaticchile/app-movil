@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_provider.dart';
@@ -25,6 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  // C-05: Rate limiting client-side
+  int _loginAttempts = 0;
+  DateTime? _lockoutUntil;
 
   @override
   void dispose() {
@@ -37,25 +41,53 @@ class _LoginScreenState extends State<LoginScreen> {
     if (value == null || value.isEmpty) {
       return 'Por favor ingrese su RUT';
     }
-    // Acepta formato 12.345.678-9 o 12345678-9
     if (!RegExp(r'^\d{1,2}\.?\d{3}\.?\d{3}-[\dKk]$').hasMatch(value)) {
       return 'Formato inválido. Use: 12.345.678-9';
+    }
+    // A-05: Validar dígito verificador
+    if (!validarRut(value)) {
+      return 'RUT inválido. Verifique el dígito verificador';
     }
     return null;
   }
 
+  // C-04: Política de contraseñas fuerte
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingrese su contraseña';
     }
-    if (value.length < 6) {
-      return 'La contraseña debe tener al menos 6 caracteres';
+    if (value.length < 12) {
+      return 'La contraseña debe tener al menos 12 caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Debe contener al menos una mayúscula';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'Debe contener al menos una minúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Debe contener al menos un número';
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+      return 'Debe contener al menos un carácter especial';
     }
     return null;
   }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // C-05: Verificar bloqueo temporal
+    if (_lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!)) {
+      final remaining = _lockoutUntil!.difference(DateTime.now()).inSeconds;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Demasiados intentos. Espera $remaining segundos.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -66,6 +98,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (!mounted) return;
+
+      // C-05: Reset intentos en login exitoso
+      _loginAttempts = 0;
+      _lockoutUntil = null;
 
       // Guardar usuario en provider
       final userProvider = context.read<UserProvider>();
@@ -87,6 +123,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      // C-05: Incrementar intentos y aplicar delay exponencial
+      _loginAttempts++;
+      if (_loginAttempts >= 5) {
+        _lockoutUntil = DateTime.now().add(
+          Duration(seconds: min(300, pow(2, _loginAttempts - 4).toInt() * 15)),
+        );
+      }
       String mensaje = 'Error al iniciar sesión';
       final errorStr = e.toString();
       if (errorStr.contains('401') || errorStr.contains('credenciales')) {

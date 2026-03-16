@@ -59,18 +59,32 @@ class Invoice {
     this.fechaPago,
   });
 
+  // M-01: Parsing seguro con valores por defecto
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
-      id: json['id'] ?? '',
-      clienteId: json['clienteId'] ?? '',
-      monto: (json['monto'] as num).toDouble(),
-      periodo: json['periodo'] ?? '',
-      estado: json['estado'] ?? 'pendiente',
-      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
-      fechaPago: json['fechaPago'] != null
-          ? DateTime.parse(json['fechaPago'] as String)
-          : null,
+      id: json['id']?.toString() ?? '',
+      clienteId: json['clienteId']?.toString() ?? '',
+      monto: _parseDouble(json['monto']),
+      periodo: json['periodo']?.toString() ?? '',
+      estado: json['estado']?.toString() ?? 'pendiente',
+      fechaCreacion: _parseDate(json['fechaCreacion']) ?? DateTime.now(),
+      fechaPago: _parseDate(json['fechaPago']),
     );
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    try {
+      return DateTime.parse(value.toString());
+    } catch (_) {
+      return null;
+    }
   }
 
   InvoiceStatusConfig get statusConfig =>

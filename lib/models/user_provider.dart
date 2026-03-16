@@ -12,7 +12,15 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // M-02: Limpieza segura de datos sensibles
   void clearUser() {
+    if (_user != null) {
+      _user!.nombre = '';
+      _user!.correo = '';
+      _user!.telefono = '';
+      _user!.direccion = '';
+      _user!.rut = '';
+    }
     _user = null;
     notifyListeners();
   }

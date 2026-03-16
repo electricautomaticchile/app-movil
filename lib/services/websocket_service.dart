@@ -1,19 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 typedef WsMessageCallback = void Function(Map<String, dynamic> data);
 
 class WebSocketService {
-  static const String _wsUrl =
-      'wss://api-electricautomaticchile.com/api/ws/connect';
+  // A-01: URL configurable via const (usar --dart-define en build)
+  static const String _wsUrl = String.fromEnvironment(
+    'WS_URL',
+    defaultValue: 'wss://api-electricautomaticchile.com/api/ws/connect',
+  );
   static const _storage = FlutterSecureStorage();
 
   WebSocket? _socket;
   StreamSubscription? _sub;
   bool _disposed = false;
+  int _reconnectAttempts = 0; // M-04: Backoff exponencial
 
   WsMessageCallback? onDeviceUpdate;
   VoidCallback? onConnected;
@@ -23,8 +28,12 @@ class WebSocketService {
     if (_disposed) return;
     try {
       final token = await _storage.read(key: 'access_token');
-      final uri = Uri.parse(token != null ? '$_wsUrl?token=$token' : _wsUrl);
-      _socket = await WebSocket.connect(uri.toString());
+      // C-02: Enviar token como header en vez de query parameter
+      _socket = await WebSocket.connect(
+        _wsUrl,
+        headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+      );
+      _reconnectAttempts = 0; // Reset en conexión exitosa
       onConnected?.call();
 
       _sub = _socket!.listen(
@@ -52,8 +61,12 @@ class WebSocketService {
     }
   }
 
+  // M-04: Backoff exponencial con jitter
   void _reconnect() {
-    Future.delayed(const Duration(seconds: 5), () {
+    final delay =
+        min(30, pow(2, _reconnectAttempts).toInt()) + Random().nextInt(3);
+    _reconnectAttempts++;
+    Future.delayed(Duration(seconds: delay), () {
       if (!_disposed) connect();
     });
   }

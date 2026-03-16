@@ -36,12 +36,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return null;
   }
 
+  // C-04: Política de contraseñas fuerte
   String? _validateNewPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'La nueva contraseña es requerida';
     }
-    if (value.length < 6) {
-      return 'Debe tener al menos 6 caracteres';
+    if (value.length < 12) {
+      return 'Debe tener al menos 12 caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Debe contener al menos una mayúscula';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'Debe contener al menos una minúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Debe contener al menos un número';
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+      return 'Debe contener al menos un carácter especial';
     }
     return null;
   }
@@ -81,9 +94,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       _formKey.currentState!.reset();
     } catch (e) {
       if (!mounted) return;
+      // C-07: No exponer errores internos del servidor
+      String mensaje = 'Error al actualizar la contraseña. Intenta nuevamente.';
+      final errorStr = e.toString();
+      if (errorStr.contains('401') || errorStr.contains('incorrecta')) {
+        mensaje = 'La contraseña actual es incorrecta';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al actualizar: ${e.toString()}'),
+          content: Text(mensaje),
           backgroundColor: AppColors.danger,
           duration: const Duration(seconds: 3),
         ),

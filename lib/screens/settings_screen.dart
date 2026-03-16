@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../routes/app_routes.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -16,6 +17,11 @@ import '../widgets/settings_switch_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<String> _getVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    return 'Versión ${info.version}+${info.buildNumber}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,12 +173,16 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Versión 2.0.1',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: (isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.mutedForeground),
+                  // B-03: Versión dinámica desde package_info_plus
+                  FutureBuilder<String>(
+                    future: _getVersion(),
+                    builder: (context, snapshot) => Text(
+                      snapshot.data ?? 'Cargando versión...',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: (isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.mutedForeground),
+                      ),
                     ),
                   ),
                   SizedBox(height: AppSpacing.xl),
