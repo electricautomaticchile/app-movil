@@ -16,7 +16,6 @@ class ApiService {
   // C-01: SHA-256 fingerprints del certificado del servidor
   // Actualizar cuando se renueve el certificado
   static const List<String> _pinnedCertFingerprints = [
-    // TODO: Reemplazar con el hash SHA-256 real del certificado de producción
     // Obtener con: openssl s_client -connect api-electricautomaticchile.com:443 | openssl x509 -fingerprint -sha256
     'PLACEHOLDER_CERT_FINGERPRINT_SHA256',
   ];

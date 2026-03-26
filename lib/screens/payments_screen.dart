@@ -34,17 +34,19 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     try {
       final clienteId = context.read<UserProvider>().user?.id ?? '';
       final boletas = await InvoiceService.getByCliente(clienteId);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _boletas = boletas;
           _isLoading = false;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'No se pudieron cargar las boletas';
           _isLoading = false;
         });
+      }
     }
   }
 
@@ -389,7 +391,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _boletas.length,
-            separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (_, _) => SizedBox(height: AppSpacing.sm),
             itemBuilder: (_, i) => _boletaTile(isDark, _boletas[i]),
           ),
       ],

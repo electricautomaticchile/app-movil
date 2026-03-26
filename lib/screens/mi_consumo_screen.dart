@@ -27,7 +27,6 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
 
   // Valores en vivo desde WebSocket (sobreescriben los de HTTP)
   double? _liveKwh;
-  double? _liveCosto;
   double? _liveVoltaje;
   double? _liveCorriente;
   double? _livePotencia;
@@ -61,9 +60,6 @@ class _MiConsumoScreenState extends State<MiConsumoScreen> {
       _liveKwh =
           (data['energia'] as num?)?.toDouble() ??
           (data['energy'] as num?)?.toDouble();
-      _liveCosto =
-          (data['costo'] as num?)?.toDouble() ??
-          (data['cost'] as num?)?.toDouble();
       _liveVoltaje =
           (data['voltaje'] as num?)?.toDouble() ??
           (data['voltage'] as num?)?.toDouble();

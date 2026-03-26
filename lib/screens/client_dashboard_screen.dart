@@ -167,11 +167,12 @@ class _HomeContentState extends State<_HomeContent> {
   Future<void> _loadConsumo() async {
     try {
       final resumen = await ConsumoService.getResumen();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _resumen = resumen;
           _loadingConsumo = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loadingConsumo = false);
     }

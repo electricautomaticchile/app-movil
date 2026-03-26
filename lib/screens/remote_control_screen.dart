@@ -123,11 +123,12 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
           ),
         );
         if (!didAuth) {
-          if (mounted)
+          if (mounted) {
             _showSnack(
               'Autenticación requerida para esta acción',
               isError: true,
             );
+          }
           return;
         }
       }

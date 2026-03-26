@@ -33,8 +33,9 @@ class Meter {
 
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
-    if (value is String)
+    if (value is String) {
       return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    }
     return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
