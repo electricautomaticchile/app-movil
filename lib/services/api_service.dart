@@ -16,8 +16,8 @@ class ApiService {
   // C-01: SHA-256 fingerprints del certificado del servidor
   // Actualizar cuando se renueve el certificado
   static const List<String> _pinnedCertFingerprints = [
-    // Obtener con: openssl s_client -connect api-electricautomaticchile.com:443 | openssl x509 -fingerprint -sha256
-    'PLACEHOLDER_CERT_FINGERPRINT_SHA256',
+    // Obtenido con: openssl s_client -connect api-electricautomaticchile.com:443 | openssl x509 -fingerprint -sha256
+    '870B9F70182E91B8551B97604AF2C66C4FB3B5E759B0B00D6C0CAACCA7BD9EE0',
   ];
 
   // Callback para redirigir al login cuando el token expira
@@ -32,6 +32,8 @@ class ApiService {
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
+        // Mejora #10: Enviar cookies HttpOnly automáticamente
+        extra: {'withCredentials': true},
       ),
     );
 
