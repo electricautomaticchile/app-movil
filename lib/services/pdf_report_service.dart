@@ -383,7 +383,6 @@ class PdfReportService {
         );
     return '\$$formatted';
   }
-}
 
   /// Descarga el PDF de una boleta individual desde el backend
   static Future<void> downloadBoletaPdf({
@@ -409,3 +408,4 @@ class PdfReportService {
       }
     }
   }
+}

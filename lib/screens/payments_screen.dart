@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/invoice.dart';
 import '../models/user_provider.dart';
-import '../models/invoice_provider.dart';
 import '../services/invoice_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -372,7 +371,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _vencidas.length,
-          separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+          separatorBuilder: (_, _) => SizedBox(height: AppSpacing.sm),
           itemBuilder: (_, i) => _boletaTile(isDark, _vencidas[i]),
         ),
       ],
@@ -521,7 +520,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _boletas.length,
-            separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (_, _) => SizedBox(height: AppSpacing.sm),
             itemBuilder: (_, i) => _boletaTile(isDark, _boletas[i]),
           ),
       ],

@@ -5,7 +5,6 @@ import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
 import '../models/user_provider.dart';
 import '../routes/app_routes.dart';
-import '../services/invoice_service.dart';
 import '../services/pdf_report_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -409,6 +408,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
           itemCount: invoices.length,
           separatorBuilder: (context, index) => SizedBox(height: AppSpacing.sm),
           itemBuilder: (context, index) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             return InvoiceTile(
               invoice: invoices[index],
               onTap: () => _showBoletaDetalle(context, invoices[index], isDark),

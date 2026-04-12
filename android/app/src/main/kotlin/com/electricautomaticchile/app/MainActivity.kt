@@ -1,4 +1,4 @@
-package com.example.untitled
+package com.electricautomaticchile.app
 
 import android.os.Bundle
 import android.view.WindowManager
