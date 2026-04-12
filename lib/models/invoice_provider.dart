@@ -6,12 +6,14 @@ class InvoiceProvider extends ChangeNotifier {
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
   List<Invoice> _invoices = [];
+  DeudaResumen? _deudaResumen;
   bool _isLoading = false;
   String? _error;
 
   int get selectedYear => _selectedYear;
   int get selectedMonth => _selectedMonth;
   List<Invoice> get invoices => _invoices;
+  DeudaResumen? get deudaResumen => _deudaResumen;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -22,22 +24,18 @@ class InvoiceProvider extends ChangeNotifier {
     }).toList();
   }
 
+  List<Invoice> get boletasVencidas =>
+      _invoices.where((i) => i.isVencido).toList();
+
+  List<Invoice> get boletasPendientes =>
+      _invoices.where((i) => i.isPendiente).toList();
+
   int get documentCount => filteredInvoices.length;
 
   String get selectedMonthName {
     const months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
     ];
     return months[_selectedMonth - 1];
   }
@@ -67,10 +65,16 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _invoices = await InvoiceService.getByCliente(clienteId);
+      final results = await Future.wait([
+        InvoiceService.getByCliente(clienteId),
+        InvoiceService.getResumenDeuda(clienteId),
+      ]);
+      _invoices = results[0] as List<Invoice>;
+      _deudaResumen = results[1] as DeudaResumen;
     } catch (e) {
       _error = 'No se pudieron cargar las facturas';
       _invoices = [];
+      _deudaResumen = null;
     } finally {
       _isLoading = false;
       notifyListeners();

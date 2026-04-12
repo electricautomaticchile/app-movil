@@ -17,7 +17,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/facturas_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/support_screen.dart';
-import 'screens/payments_screen.dart';
+// PaymentsScreen eliminada — unificada con FacturasScreen
 import 'screens/remote_control_screen.dart';
 import 'screens/terms_screen.dart';
 
@@ -54,7 +54,7 @@ class ElectricApp extends StatelessWidget {
             AppRoutes.facturas: (context) => const FacturasScreen(),
             AppRoutes.help: (context) => const HelpScreen(),
             AppRoutes.support: (context) => const SupportScreen(),
-            AppRoutes.payments: (context) => const PaymentsScreen(),
+            AppRoutes.payments: (context) => const FacturasScreen(), // Unificado con boletas
             AppRoutes.remoteControl: (context) => const RemoteControlScreen(),
             AppRoutes.terms: (context) => const TermsScreen(),
           },

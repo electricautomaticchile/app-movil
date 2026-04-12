@@ -1,10 +1,11 @@
-// path: lib/screens/facturas_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/invoice.dart';
 import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
+import '../models/user_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/invoice_service.dart';
 import '../services/pdf_report_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -12,6 +13,7 @@ import '../theme/typography.dart';
 import '../widgets/month_selector_button.dart';
 import '../widgets/invoice_tile.dart';
 import '../widgets/icon_circle_button.dart';
+import '../widgets/status_badge.dart';
 
 class FacturasScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -24,6 +26,19 @@ class FacturasScreen extends StatefulWidget {
 
 class _FacturasScreenState extends State<FacturasScreen> {
   bool _isGeneratingPdf = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cargar boletas del backend al abrir la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProvider = context.read<UserProvider>();
+      final clienteId = userProvider.user?.id ?? '';
+      if (clienteId.isNotEmpty) {
+        context.read<InvoiceProvider>().loadInvoices(clienteId);
+      }
+    });
+  }
 
   static const List<String> _months = [
     'Enero',
@@ -49,32 +64,103 @@ class _FacturasScreenState extends State<FacturasScreen> {
           ? const Color(0xFF1A1A1A)
           : AppColors.backgroundLight,
       appBar: _buildAppBar(context, isDark),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Año fiscal
-            _buildYearSelector(context, isDark),
-            SizedBox(height: AppSpacing.xl),
+      body: Consumer<InvoiceProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(AppSpacing.screenPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Banner de alerta de deuda
+                if (provider.deudaResumen != null &&
+                    !provider.deudaResumen!.isNormal)
+                  _buildAlertBanner(context, isDark, provider),
+                if (provider.deudaResumen != null &&
+                    !provider.deudaResumen!.isNormal)
+                  SizedBox(height: AppSpacing.lg),
 
-            // Periodo (grid de meses)
-            _buildMonthGrid(context, isDark),
-            SizedBox(height: AppSpacing.xl),
+                // Año fiscal
+                _buildYearSelector(context, isDark),
+                SizedBox(height: AppSpacing.xl),
 
-            // Header de resultados
-            _buildResultsHeader(context, isDark),
-            SizedBox(height: AppSpacing.md),
+                // Periodo (grid de meses)
+                _buildMonthGrid(context, isDark),
+                SizedBox(height: AppSpacing.xl),
 
-            // Lista de facturas
-            _buildInvoicesList(context),
-            SizedBox(height: AppSpacing.lg),
+                // Header de resultados
+                _buildResultsHeader(context, isDark),
+                SizedBox(height: AppSpacing.md),
 
-            // CTA descarga
-            _buildDownloadCTA(context, isDark),
-            SizedBox(height: AppSpacing.xxl),
-          ],
-        ),
+                // Lista de boletas
+                _buildInvoicesList(context),
+                SizedBox(height: AppSpacing.lg),
+
+                // CTA descarga
+                _buildDownloadCTA(context, isDark),
+                SizedBox(height: AppSpacing.xxl),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAlertBanner(BuildContext context, bool isDark, InvoiceProvider provider) {
+    final resumen = provider.deudaResumen!;
+    Color bannerColor;
+    IconData bannerIcon;
+
+    if (resumen.isCorte) {
+      bannerColor = AppColors.danger;
+      bannerIcon = Icons.power_off;
+    } else if (resumen.isCritico) {
+      bannerColor = const Color(0xFFE65100);
+      bannerIcon = Icons.warning_amber_rounded;
+    } else {
+      bannerColor = const Color(0xFFF57C00);
+      bannerIcon = Icons.info_outline;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: bannerColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: bannerColor.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(bannerIcon, color: bannerColor, size: 22),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  resumen.isCorte
+                      ? 'Servicio suspendido'
+                      : resumen.isCritico
+                          ? 'Riesgo de suspensión'
+                          : 'Boletas vencidas',
+                  style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                      .copyWith(fontWeight: FontWeight.w700, color: bannerColor),
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  resumen.mensajeAlerta,
+                  style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
+                      .copyWith(color: bannerColor.withValues(alpha: 0.9)),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -97,7 +183,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
         },
       ),
       title: Text(
-        'Todas las facturas',
+        'Mis Boletas',
         style: (isDark ? AppTypography.h3Dark : AppTypography.h3Light).copyWith(
           fontSize: 18,
         ),
@@ -325,16 +411,7 @@ class _FacturasScreenState extends State<FacturasScreen> {
           itemBuilder: (context, index) {
             return InvoiceTile(
               invoice: invoices[index],
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Detalle de factura: ${invoices[index].periodo}',
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
+              onTap: () => _showBoletaDetalle(context, invoices[index], isDark),
             );
           },
         );
@@ -411,6 +488,114 @@ class _FacturasScreenState extends State<FacturasScreen> {
               ),
             ),
     );
+  }
+
+  void _showBoletaDetalle(BuildContext context, Invoice boleta, bool isDark) {
+    final status = boleta.statusConfig;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.borderDark : AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.lg),
+            // Título
+            Row(
+              children: [
+                Icon(Icons.receipt_long_outlined, color: AppColors.primary, size: 24),
+                SizedBox(width: AppSpacing.sm),
+                Text(boleta.periodo,
+                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3Light)),
+                const Spacer(),
+                StatusBadge(
+                  label: status.label,
+                  color: status.color,
+                  backgroundColor: status.backgroundColor,
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.lg),
+            // Detalles
+            _detalleRow('Monto', boleta.formattedMonto, isDark, bold: true),
+            _detalleRow('Consumo', boleta.formattedConsumo, isDark),
+            _detalleRow('Emitida', boleta.formattedDate, isDark),
+            if (boleta.fechaVencimiento != null)
+              _detalleRow('Vencimiento', boleta.formattedVencimiento, isDark,
+                  color: boleta.isVencido ? AppColors.danger : null),
+            if (boleta.isPagado && boleta.fechaPago != null)
+              _detalleRow('Pagada el', _formatDate(boleta.fechaPago!), isDark,
+                  color: AppColors.success),
+            SizedBox(height: AppSpacing.xl),
+            // Botón PDF
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await PdfReportService.downloadBoletaPdf(
+                    context: context,
+                    boletaId: boleta.id,
+                    periodo: boleta.periodo,
+                  );
+                },
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Descargar PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detalleRow(String label, String value, bool isDark,
+      {bool bold = false, Color? color}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
+                  .copyWith(color: isDark ? AppColors.textSecondaryDark : AppColors.mutedForeground)),
+          Text(value,
+              style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight).copyWith(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              )),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
   }
 
   Future<void> _generatePdfReport() async {

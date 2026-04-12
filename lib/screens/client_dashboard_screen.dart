@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
 import '../models/user_provider.dart';
 import '../routes/app_routes.dart';
@@ -62,9 +63,9 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
       return;
     }
 
-    // Handle facturas
+    // Handle facturas — cambiar tab y recargar boletas
     if (message == 'facturas') {
-      setState(() => _currentIndex = 1);
+      _switchToBoletas(context);
       return;
     }
 
@@ -81,6 +82,14 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  void _switchToBoletas(BuildContext context) {
+    final clienteId = context.read<UserProvider>().user?.id ?? '';
+    if (clienteId.isNotEmpty) {
+      context.read<InvoiceProvider>().loadInvoices(clienteId);
+    }
+    setState(() => _currentIndex = 1);
   }
 
   @override
@@ -110,14 +119,23 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
                 onBack: () => setState(() => _currentIndex = 0),
               ),
       ),
-      bottomNavigationBar: _buildBottomNav(isDark),
+      bottomNavigationBar: _buildBottomNav(context, isDark),
     );
   }
 
-  Widget _buildBottomNav(bool isDark) {
+  Widget _buildBottomNav(BuildContext context, bool isDark) {
     return BottomNavigationBar(
       currentIndex: _currentIndex,
-      onTap: (index) => setState(() => _currentIndex = index),
+      onTap: (index) {
+        if (index == 1) {
+          // Tab Boletas — recargar al tocar
+          final clienteId = context.read<UserProvider>().user?.id ?? '';
+          if (clienteId.isNotEmpty) {
+            context.read<InvoiceProvider>().loadInvoices(clienteId);
+          }
+        }
+        setState(() => _currentIndex = index);
+      },
       backgroundColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: isDark
@@ -137,7 +155,7 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
         BottomNavigationBarItem(
           icon: Icon(Icons.receipt_long_outlined),
           activeIcon: Icon(Icons.receipt_long),
-          label: 'Facturas',
+          label: 'Boletas',
         ),
       ],
     );
@@ -289,7 +307,7 @@ class _HomeContentState extends State<_HomeContent> {
       children: [
         QuickAction(
           icon: Icons.receipt_outlined,
-          label: 'Facturas',
+          label: 'Boletas',
           onTap: () => widget.onShowSnackBar('facturas'),
         ),
         QuickAction(
@@ -299,8 +317,8 @@ class _HomeContentState extends State<_HomeContent> {
         ),
         QuickAction(
           icon: Icons.payment_outlined,
-          label: 'Pagos',
-          onTap: () => widget.onShowSnackBar('payments'),
+          label: 'Boletas',
+          onTap: () => widget.onShowSnackBar('facturas'),
         ),
         QuickAction(
           icon: Icons.power_settings_new,

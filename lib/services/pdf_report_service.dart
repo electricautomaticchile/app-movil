@@ -1,10 +1,14 @@
 // path: lib/services/pdf_report_service.dart
 
 import 'dart:typed_data';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/invoice.dart';
+import '../theme/colors.dart';
+import 'api_service.dart';
 
 class PdfReportService {
   static Future<void> generateAndOpenMonthlyReport({
@@ -380,3 +384,28 @@ class PdfReportService {
     return '\$$formatted';
   }
 }
+
+  /// Descarga el PDF de una boleta individual desde el backend
+  static Future<void> downloadBoletaPdf({
+    required BuildContext context,
+    required String boletaId,
+    required String periodo,
+  }) async {
+    try {
+      final response = await ApiService.dio.get(
+        '/boletas/$boletaId/pdf',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = Uint8List.fromList(response.data as List<int>);
+      await Printing.sharePdf(bytes: bytes, filename: 'boleta-$periodo.pdf');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo descargar el PDF'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }

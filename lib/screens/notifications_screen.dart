@@ -1,5 +1,6 @@
 // path: lib/screens/notifications_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/notification_provider.dart';
@@ -8,8 +9,34 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/notification_tile.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Carga inicial
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().loadNotifications();
+    });
+    // Polling cada 30 segundos mientras la pantalla está abierta
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) context.read<NotificationProvider>().loadNotifications();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../routes/app_routes.dart';
+import '../services/api_service.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 
@@ -39,18 +40,36 @@ class _HelpScreenState extends State<HelpScreen> {
   Future<void> _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mensaje enviado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _subjectController.clear();
-        _messageController.clear();
-        setState(() => _selectedCategory = null);
+      try {
+        await ApiService.dio.post('/tickets', data: {
+          'asunto': _subjectController.text.trim(),
+          'categoria': _selectedCategory,
+          'mensaje': _messageController.text.trim(),
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Mensaje enviado correctamente. Te responderemos pronto.'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          _subjectController.clear();
+          _messageController.clear();
+          setState(() => _selectedCategory = null);
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo enviar el mensaje. Intenta de nuevo.'),
+              backgroundColor: AppColors.danger,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

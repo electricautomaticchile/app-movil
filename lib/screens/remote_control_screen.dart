@@ -257,6 +257,10 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
           SizedBox(height: AppSpacing.lg),
           if (_estado!.boletasPendientes > 0) _buildDeudaWarning(isDark),
           if (_estado!.boletasPendientes > 0) SizedBox(height: AppSpacing.lg),
+          if (!_estado!.isActivo && _estado!.motivoCorte.isNotEmpty)
+            _buildCorteImpagoBanner(isDark),
+          if (!_estado!.isActivo && _estado!.motivoCorte.isNotEmpty)
+            SizedBox(height: AppSpacing.lg),
           _buildWarningInfo(isDark),
           SizedBox(height: AppSpacing.xxl),
           _buildHistorySection(isDark),
@@ -435,6 +439,65 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
     );
   }
 
+  Widget _buildCorteImpagoBanner(bool isDark) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.power_off, color: AppColors.danger, size: 24),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Servicio suspendido por boletas impagas',
+                  style: (isDark
+                          ? AppTypography.bodyDark
+                          : AppTypography.bodyLight)
+                      .copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.danger,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            'Paga tus boletas vencidas para restablecer el suministro automáticamente.',
+            style: (isDark
+                    ? AppTypography.bodySmallDark
+                    : AppTypography.bodySmallLight)
+                .copyWith(color: AppColors.danger.withValues(alpha: 0.8)),
+          ),
+          SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/payments'),
+              icon: const Icon(Icons.payment, size: 18),
+              label: const Text('Ir a Pagos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWarningInfo(bool isDark) {
     return Container(
       padding: EdgeInsets.all(AppSpacing.md),
@@ -449,7 +512,7 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              'Las solicitudes pueden tardar hasta 24 horas en procesarse. Recibirás una notificación cuando se complete.',
+              'El corte o reconexión se ejecuta automáticamente. Recibirás un SMS y correo cuando se complete.',
               style:
                   (isDark
                           ? AppTypography.bodySmallDark
@@ -463,40 +526,26 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
   }
 
   Widget _buildHistorySection(bool isDark) {
+    // Solo mostrar historial si hay acciones locales (acciones hechas en esta sesión)
+    if (_history.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Historial de Acciones',
+          'Acciones de esta sesión',
           style: isDark ? AppTypography.h3Dark : AppTypography.h3Light,
         ),
         SizedBox(height: AppSpacing.md),
-        if (_history.isEmpty)
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.xl),
-              child: Text(
-                'No hay acciones registradas',
-                style:
-                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
-                        .copyWith(
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.mutedForeground,
-                        ),
-              ),
-            ),
-          )
-        else
-          ...List.generate(_history.length, (i) {
-            final item = _history[i];
-            return _HistoryTile(
-              action: item.accion,
-              date: item.fecha,
-              success: item.exitoso,
-              isLast: i == _history.length - 1,
-            );
-          }),
+        ...List.generate(_history.length, (i) {
+          final item = _history[i];
+          return _HistoryTile(
+            action: item.accion,
+            date: item.fecha,
+            success: item.exitoso,
+            isLast: i == _history.length - 1,
+          );
+        }),
       ],
     );
   }

@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 
-/// Estados según el backend: pagado, pendiente, vencido
+/// Estados según el backend: pagado, pendiente, por_vencer, vencido
 class InvoiceStatusConfig {
   final String label;
   final Color color;
@@ -22,6 +22,12 @@ class InvoiceStatusConfig {
           label: 'PAGADO',
           color: AppColors.success,
           backgroundColor: Color(0xFFE8F5E9),
+        );
+      case 'por_vencer':
+        return const InvoiceStatusConfig(
+          label: 'POR VENCER',
+          color: Color(0xFFE65100),
+          backgroundColor: Color(0xFFFFF3E0),
         );
       case 'vencido':
         return const InvoiceStatusConfig(
@@ -47,7 +53,10 @@ class Invoice {
   final String periodo;
   final String estado;
   final DateTime fechaCreacion;
+  final DateTime? fechaVencimiento;
   final DateTime? fechaPago;
+  final double consumoKwh;
+  final String? motivoCorte;
 
   const Invoice({
     required this.id,
@@ -56,7 +65,10 @@ class Invoice {
     required this.periodo,
     required this.estado,
     required this.fechaCreacion,
+    this.fechaVencimiento,
     this.fechaPago,
+    this.consumoKwh = 0.0,
+    this.motivoCorte,
   });
 
   // M-01: Parsing seguro con valores por defecto
@@ -68,9 +80,34 @@ class Invoice {
       periodo: json['periodo']?.toString() ?? '',
       estado: json['estado']?.toString() ?? 'pendiente',
       fechaCreacion: _parseDate(json['fechaCreacion']) ?? DateTime.now(),
+      fechaVencimiento: _parseDate(json['fechaVencimiento']),
       fechaPago: _parseDate(json['fechaPago']),
+      consumoKwh: _parseDouble(json['consumoKwh']),
+      motivoCorte: json['motivoCorte']?.toString(),
     );
   }
+
+  bool get isVencido => estado == 'vencido';
+  bool get isPendiente => estado == 'pendiente' || estado == 'por_vencer';
+  bool get isPagado => estado == 'pagado';
+  bool get isPorVencer => estado == 'por_vencer';
+
+  /// Días restantes hasta el vencimiento (negativo si ya venció)
+  int? get diasParaVencer {
+    if (fechaVencimiento == null) return null;
+    return fechaVencimiento!.difference(DateTime.now()).inDays;
+  }
+
+  String get formattedVencimiento {
+    if (fechaVencimiento == null) return '';
+    const months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+    ];
+    return '${fechaVencimiento!.day} ${months[fechaVencimiento!.month - 1]}, ${fechaVencimiento!.year}';
+  }
+
+  String get formattedConsumo => '${consumoKwh.toStringAsFixed(1)} kWh';
 
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
