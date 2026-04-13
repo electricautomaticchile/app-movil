@@ -51,25 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  // C-04: Política de contraseñas fuerte
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingrese su contraseña';
-    }
-    if (value.length < 12) {
-      return 'La contraseña debe tener al menos 12 caracteres';
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-      return 'Debe contener al menos una mayúscula';
-    }
-    if (!RegExp(r'[a-z]').hasMatch(value)) {
-      return 'Debe contener al menos una minúscula';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(value)) {
-      return 'Debe contener al menos un número';
-    }
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-      return 'Debe contener al menos un carácter especial';
     }
     return null;
   }

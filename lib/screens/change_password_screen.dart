@@ -41,8 +41,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (value == null || value.isEmpty) {
       return 'La nueva contraseña es requerida';
     }
-    if (value.length < 12) {
-      return 'Debe tener al menos 12 caracteres';
+    if (value.length < 8) {
+      return 'Debe tener al menos 8 caracteres';
     }
     if (!RegExp(r'[A-Z]').hasMatch(value)) {
       return 'Debe contener al menos una mayúscula';
