@@ -5,6 +5,7 @@ import '../models/user_provider.dart';
 import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 import '../utils/rut_formatter.dart';
 import '../widgets/screen_container.dart';
 import '../widgets/app_card.dart';
@@ -29,6 +30,33 @@ class _LoginScreenState extends State<LoginScreen> {
   // C-05: Rate limiting client-side
   int _loginAttempts = 0;
   DateTime? _lockoutUntil;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final available = await BiometricService.isAvailable();
+    final enabled = await BiometricService.isEnabled();
+    if (mounted) {
+      setState(() => _biometricAvailable = available && enabled);
+      if (available && enabled) {
+        _handleBiometricLogin();
+      }
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    final creds = await BiometricService.authenticate();
+    if (creds == null || !mounted) return;
+
+    _rutController.text = creds.rut;
+    _passwordController.text = creds.password;
+    _handleLogin();
+  }
 
   @override
   void dispose() {
@@ -103,6 +131,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result.requiereCambioPassword) {
         Navigator.pushReplacementNamed(context, AppRoutes.changePassword);
       } else {
+        // Ofrecer guardar biometría si está disponible y no está habilitada
+        final bioAvailable = await BiometricService.isAvailable();
+        final bioEnabled = await BiometricService.isEnabled();
+        if (bioAvailable && !bioEnabled && mounted) {
+          await BiometricService.enable(
+            _rutController.text.trim(),
+            _passwordController.text,
+          );
+        }
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
       }
     } catch (e) {
@@ -211,6 +249,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
               ),
+              if (_biometricAvailable) ...[
+                SizedBox(height: AppSpacing.md),
+                OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _handleBiometricLogin,
+                  icon: const Icon(Icons.fingerprint, size: 24),
+                  label: const Text('Acceder con biometría'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

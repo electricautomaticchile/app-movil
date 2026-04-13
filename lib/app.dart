@@ -40,23 +40,44 @@ class ElectricApp extends StatelessWidget {
 
           // Routes configuration
           initialRoute: AppRoutes.landing,
-          routes: {
-            AppRoutes.landing: (context) => const LandingScreen(),
-            AppRoutes.login: (context) => const LoginScreen(),
+          onGenerateRoute: (settings) {
+            final routes = <String, WidgetBuilder>{
+              AppRoutes.landing: (context) => const LandingScreen(),
+              AppRoutes.login: (context) => const LoginScreen(),
+              AppRoutes.clientDashboard: (context) => const ClientDashboardScreen(),
+              AppRoutes.miConsumo: (context) => const MiConsumoScreen(),
+              AppRoutes.settings: (context) => const SettingsScreen(),
+              AppRoutes.personalData: (context) => const PersonalDataScreen(),
+              AppRoutes.changePassword: (context) => const ChangePasswordScreen(),
+              AppRoutes.notifications: (context) => const NotificationsScreen(),
+              AppRoutes.facturas: (context) => const FacturasScreen(),
+              AppRoutes.help: (context) => const HelpScreen(),
+              AppRoutes.support: (context) => const SupportScreen(),
+              AppRoutes.payments: (context) => const FacturasScreen(),
+              AppRoutes.remoteControl: (context) => const RemoteControlScreen(),
+              AppRoutes.terms: (context) => const TermsScreen(),
+            };
 
-            AppRoutes.clientDashboard: (context) =>
-                const ClientDashboardScreen(),
-            AppRoutes.miConsumo: (context) => const MiConsumoScreen(),
-            AppRoutes.settings: (context) => const SettingsScreen(),
-            AppRoutes.personalData: (context) => const PersonalDataScreen(),
-            AppRoutes.changePassword: (context) => const ChangePasswordScreen(),
-            AppRoutes.notifications: (context) => const NotificationsScreen(),
-            AppRoutes.facturas: (context) => const FacturasScreen(),
-            AppRoutes.help: (context) => const HelpScreen(),
-            AppRoutes.support: (context) => const SupportScreen(),
-            AppRoutes.payments: (context) => const FacturasScreen(), // Unificado con boletas
-            AppRoutes.remoteControl: (context) => const RemoteControlScreen(),
-            AppRoutes.terms: (context) => const TermsScreen(),
+            final builder = routes[settings.name];
+            if (builder == null) return null;
+
+            return PageRouteBuilder(
+              settings: settings,
+              pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.05, 0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                    child: child,
+                  ),
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 250),
+            );
           },
 
           // Error handling
