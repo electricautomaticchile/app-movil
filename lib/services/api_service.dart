@@ -31,28 +31,16 @@ class ApiService {
         baseUrl: _baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Type': 'mobile',
+        },
         // Mejora #10: Enviar cookies HttpOnly automáticamente
         extra: {'withCredentials': true},
       ),
     );
 
-    // C-01: Certificate pinning (solo en release, no en debug)
-    if (!kDebugMode) {
-      (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-        final client = HttpClient();
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) {
-              final certBytes = cert.der;
-              final fingerprint = sha256
-                  .convert(certBytes)
-                  .toString()
-                  .toUpperCase();
-              return _pinnedCertFingerprints.contains(fingerprint);
-            };
-        return client;
-      };
-    }
+    _configureCertificatePinning(dio);
 
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -92,16 +80,39 @@ class ApiService {
 
   static Dio get dio => _dio;
 
+  static void _configureCertificatePinning(Dio dio) {
+    if (kDebugMode) return;
+
+    (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate =
+        (X509Certificate? cert, String host, int port) {
+      if (cert == null || host != Uri.parse(_baseUrl).host) {
+        return false;
+      }
+
+      final fingerprint = sha256.convert(cert.der).toString().toUpperCase();
+      return _pinnedCertFingerprints.contains(fingerprint);
+    };
+  }
+
   static Future<bool> _tryRefreshToken() async {
     try {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null) return false;
-      final response = await Dio(
+      final refreshDio = Dio(
         BaseOptions(
           baseUrl: _baseUrl,
           connectTimeout: const Duration(seconds: 5),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Client-Type': 'mobile',
+          },
         ),
-      ).post('/auth/refresh-token', data: {'refreshToken': refreshToken});
+      );
+      _configureCertificatePinning(refreshDio);
+      final response = await refreshDio.post(
+        '/auth/refresh-token',
+        data: {'refreshToken': refreshToken},
+      );
       final data = response.data['data'];
       await saveTokens(data['token'], data['refreshToken'] ?? refreshToken);
       return true;
@@ -109,6 +120,8 @@ class ApiService {
       return false;
     }
   }
+
+  static Future<bool> refreshSession() => _tryRefreshToken();
 
   static Future<void> saveTokens(String token, String refreshToken) async {
     await Future.wait([

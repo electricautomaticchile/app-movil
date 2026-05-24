@@ -5,6 +5,7 @@ import '../models/user_provider.dart';
 import '../models/invoice_provider.dart';
 import '../models/notification_provider.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import '../services/biometric_service.dart';
 import '../utils/rut_formatter.dart';
 import '../widgets/screen_container.dart';
@@ -50,12 +51,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleBiometricLogin() async {
-    final creds = await BiometricService.authenticate();
-    if (creds == null || !mounted) return;
+    final rut = await BiometricService.authenticate();
+    if (rut == null || !mounted) return;
 
-    _rutController.text = creds.rut;
-    _passwordController.text = creds.password;
-    _handleLogin();
+    _rutController.text = rut;
+    setState(() => _isLoading = true);
+
+    try {
+      final refreshed = await ApiService.refreshSession();
+      if (!refreshed) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ingresa tu contraseña para renovar la sesión.'),
+          ),
+        );
+        return;
+      }
+
+      final user = await AuthService.getProfile();
+      if (!mounted) return;
+      context.read<UserProvider>().setUser(user);
+      await Future.wait([
+        context.read<InvoiceProvider>().loadInvoices(user.id),
+        context.read<NotificationProvider>().loadNotifications(),
+      ]);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -137,7 +162,6 @@ class _LoginScreenState extends State<LoginScreen> {
         if (bioAvailable && !bioEnabled && mounted) {
           await BiometricService.enable(
             _rutController.text.trim(),
-            _passwordController.text,
           );
         }
         if (!mounted) return;
