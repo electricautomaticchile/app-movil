@@ -1,72 +1,105 @@
-# ⚡ ElectricAutomaticChile – App Móvil
+# ElectricAutomaticChile - App Movil
 
-Aplicación móvil para la administración inteligente del suministro eléctrico.
+Aplicacion Flutter para clientes de ElectricAutomaticChile. Permite revisar
+consumo, facturas, pagos, notificaciones, configuracion y ayuda desde Android e
+iOS.
 
-## 🚀 Funcionalidades
+> Estado actual: la app usa datos simulados para validar experiencia y flujo de
+> pantallas. La integracion completa con el backend debe documentarse y probarse
+> cuando se conecten endpoints reales.
 
-### 🏠 Dashboard Cliente
-- **Consumo actual** con tarjeta premium (kWh, promedio diario, comparación mensual)
-- **Acciones rápidas**: Facturas, Ayuda, Pagos, Ajustes
-- **Menú lateral** con navegación completa
-- **Modo claro/oscuro** configurable
+## Funcionalidades
 
-### 📄 Facturas
-- Selector de año fiscal
-- Grid de meses para filtrado
-- Lista de facturas con detalles
-- Descarga de reportes mensuales
+- Dashboard cliente con consumo actual, promedio diario y comparacion mensual.
+- Facturas por periodo, detalle y descarga de reportes.
+- Pagos, metodos de pago e historial.
+- Consumo historico con graficos.
+- Configuracion de perfil, tema y notificaciones.
+- Centro de notificaciones.
+- Centro de ayuda y formulario de contacto.
 
-### 💳 Pagos
-- Tarjeta de saldo pendiente con fecha de vencimiento
-- Métodos de pago (Transferencia / Tarjeta)
-- Historial de pagos con estado
+## Tecnologias
 
-### 📊 Mi Consumo
-- Gráfico de consumo histórico
-- Métricas detalladas
+- Flutter y Dart.
+- Material 3.
+- Provider para estado.
+- `fl_chart` para graficos.
+- `dio` para HTTP.
+- `flutter_secure_storage` para tokens.
+- `local_auth` para biometria.
+- Android e iOS.
 
-### ⚙️ Configuración
-- Datos personales
-- Cambio de contraseña
-- Tema oscuro/claro
-- Notificaciones
+## Requisitos
 
-### 🔔 Notificaciones
-- Centro de notificaciones
-- Alertas de consumo y facturación
+- Flutter SDK compatible con Dart `^3.10.7`.
+- Android SDK configurado.
+- JDK 17 o superior para builds Android.
 
-### ❓ Centro de Ayuda
-- Formulario de contacto
-- Preguntas frecuentes
-- Soporte telefónico
-- Horario de atención
-
-> La aplicación utiliza **datos simulados** mientras se valida el diseño y la experiencia de usuario.
-
----
-
-## 🛠️ Tecnologías
-
-- **Flutter (Dart)**
-- Material 3
-- Provider (gestión de estado)
-- Gráficos con `fl_chart`
-- Arquitectura modular
-- Soporte para **Android** e **iOS**
-
----
-
-## ▶️ Cómo ejecutar el proyecto
-
-### Requisitos
-- Flutter SDK 3.10+
-- Android Studio o emulador Android/iOS
-
-### Pasos
+En esta maquina Flutter esta instalado en:
 
 ```bash
-git clone https://github.com/electricautomaticchile/app-movil.git
-cd app-movil
+/home/pipeaalzamora/flutter/bin/flutter
+```
+
+## Desarrollo
+
+```bash
 flutter pub get
 flutter run
 ```
+
+Si el binario `flutter` no esta en `PATH`, usar:
+
+```bash
+/home/pipeaalzamora/flutter/bin/flutter pub get
+/home/pipeaalzamora/flutter/bin/flutter run
+```
+
+## Tests y analisis
+
+```bash
+flutter analyze
+flutter test
+```
+
+Tests existentes:
+
+- `test/utils/client_number_formatter_test.dart`
+- `test/utils/rut_formatter_test.dart`
+
+## Build Android
+
+Debug:
+
+```bash
+flutter build apk --debug
+```
+
+Tambien se puede usar Gradle directamente:
+
+```bash
+./gradlew assembleDebug
+```
+
+Release requiere firma. Configurar `android/key.properties` o estas variables:
+
+```env
+ANDROID_KEYSTORE_FILE=/ruta/al/keystore.jks
+ANDROID_KEYSTORE_PASSWORD=
+ANDROID_KEY_ALIAS=
+ANDROID_KEY_PASSWORD=
+```
+
+Luego:
+
+```bash
+flutter build apk --release
+```
+
+## Pendiente antes de produccion
+
+- Reemplazar datos simulados por servicios reales del backend.
+- Agregar pruebas de widgets para login, dashboard, facturas y pagos.
+- Validar almacenamiento seguro de tokens.
+- Validar pinning/certificados contra dominios reales.
+- Configurar firma release y versionado.

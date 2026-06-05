@@ -3,6 +3,9 @@
 .packages
 .pub/
 build/
+android/key.properties
+*.jks
+*.keystore
 
 # Flutter web
 web/flutter_service_worker.js
