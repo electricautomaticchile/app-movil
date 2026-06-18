@@ -15,10 +15,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Redirigir al landing cuando el token expira
+  // Redirigir al login empresa cuando el token expira
   ApiService.onUnauthorized = () {
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      AppRoutes.landing,
+      AppRoutes.login,
       (route) => false,
     );
   };
@@ -77,7 +77,7 @@ class _InactivityWrapperState extends State<InactivityWrapper>
   void _handleTimeout() async {
     await ApiService.clearTokens();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      AppRoutes.landing,
+      AppRoutes.login,
       (route) => false,
     );
   }

@@ -1,19 +1,15 @@
 import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_provider.dart';
-import '../models/invoice_provider.dart';
-import '../models/notification_provider.dart';
+import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
-import '../services/api_service.dart';
-import '../services/biometric_service.dart';
-import '../utils/rut_formatter.dart';
-import '../widgets/screen_container.dart';
-import '../widgets/app_card.dart';
-import '../widgets/primary_button.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
-import '../routes/app_routes.dart';
+import '../widgets/app_card.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/screen_container.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,176 +20,97 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _rutController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  // C-05: Rate limiting client-side
   int _loginAttempts = 0;
   DateTime? _lockoutUntil;
-  bool _biometricAvailable = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkBiometric();
-  }
-
-  Future<void> _checkBiometric() async {
-    final available = await BiometricService.isAvailable();
-    final enabled = await BiometricService.isEnabled();
-    if (mounted) {
-      setState(() => _biometricAvailable = available && enabled);
-      if (available && enabled) {
-        _handleBiometricLogin();
-      }
-    }
-  }
-
-  Future<void> _handleBiometricLogin() async {
-    final rut = await BiometricService.authenticate();
-    if (rut == null || !mounted) return;
-
-    _rutController.text = rut;
-    setState(() => _isLoading = true);
-
-    try {
-      final refreshed = await ApiService.refreshSession();
-      if (!refreshed) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ingresa tu contraseña para renovar la sesión.'),
-          ),
-        );
-        return;
-      }
-
-      final user = await AuthService.getProfile();
-      if (!mounted) return;
-      context.read<UserProvider>().setUser(user);
-      await Future.wait([
-        context.read<InvoiceProvider>().loadInvoices(user.id),
-        context.read<NotificationProvider>().loadNotifications(),
-      ]);
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   @override
   void dispose() {
-    _rutController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String? _validateRut(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor ingrese su RUT';
-    }
-    if (!RegExp(r'^\d{1,2}\.?\d{3}\.?\d{3}-[\dKk]$').hasMatch(value)) {
-      return 'Formato inválido. Use: 12.345.678-9';
-    }
-    // A-05: Validar dígito verificador
-    if (!validarRut(value)) {
-      return 'RUT inválido. Verifique el dígito verificador';
-    }
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return 'Ingresa el correo corporativo';
+    final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!valid) return 'Correo inválido';
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor ingrese su contraseña';
-    }
+    if (value == null || value.isEmpty) return 'Ingresa la contraseña';
     return null;
   }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // C-05: Verificar bloqueo temporal
     if (_lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!)) {
       final remaining = _lockoutUntil!.difference(DateTime.now()).inSeconds;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Demasiados intentos. Espera $remaining segundos.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Demasiados intentos. Espera $remaining segundos.');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final result = await AuthService.login(
-        _rutController.text.trim(),
+      final result = await AuthService.loginEmpresa(
+        _emailController.text.trim().toLowerCase(),
         _passwordController.text,
       );
 
       if (!mounted) return;
-
-      // C-05: Reset intentos en login exitoso
       _loginAttempts = 0;
       _lockoutUntil = null;
+      context.read<UserProvider>().setUser(result.user);
 
-      // Guardar usuario en provider
-      final userProvider = context.read<UserProvider>();
-      userProvider.setUser(result.user);
-
-      // Cargar datos del usuario en paralelo
-      await Future.wait([
-        context.read<InvoiceProvider>().loadInvoices(result.user.id),
-        context.read<NotificationProvider>().loadNotifications(),
-      ]);
-
-      if (!mounted) return;
-
-      // Si requiere cambio de contraseña, redirigir ahí primero
-      if (result.requiereCambioPassword) {
-        Navigator.pushReplacementNamed(context, AppRoutes.changePassword);
-      } else {
-        // Ofrecer guardar biometría si está disponible y no está habilitada
-        final bioAvailable = await BiometricService.isAvailable();
-        final bioEnabled = await BiometricService.isEnabled();
-        if (bioAvailable && !bioEnabled && mounted) {
-          await BiometricService.enable(
-            _rutController.text.trim(),
-          );
-        }
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, AppRoutes.clientDashboard);
-      }
+      Navigator.pushReplacementNamed(context, AppRoutes.empresaDashboard);
     } catch (e) {
       if (!mounted) return;
-      // C-05: Incrementar intentos y aplicar delay exponencial
       _loginAttempts++;
       if (_loginAttempts >= 5) {
         _lockoutUntil = DateTime.now().add(
           Duration(seconds: min(300, pow(2, _loginAttempts - 4).toInt() * 15)),
         );
       }
-      String mensaje = 'Error al iniciar sesión';
-      final errorStr = e.toString();
-      if (errorStr.contains('401') || errorStr.contains('credenciales')) {
-        mensaje = 'RUT o contraseña incorrectos';
-      } else if (errorStr.contains('SocketException') ||
-          errorStr.contains('connection')) {
-        mensaje = 'Sin conexión al servidor';
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showError(_errorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _errorMessage(Object error) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      final body = error.response?.data;
+      if (status == 401 || status == 403) {
+        return 'Correo o contraseña incorrectos';
+      }
+      if (body is Map) {
+        final message = body['message'] ?? body['error'];
+        if (message is String && message.isNotEmpty) return message;
+      }
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout) {
+        return 'Sin conexión al servidor';
+      }
+    }
+    return 'No se pudo iniciar sesión';
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -204,87 +121,80 @@ class _LoginScreenState extends State<LoginScreen> {
       child: AppCard(
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
+          child: AutofillGroup(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.business_center_outlined,
+                  size: 44,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ),
-              SizedBox(height: AppSpacing.md),
-              Text(
-                'Iniciar Sesión',
-                style: isDark ? AppTypography.h1Dark : AppTypography.h1Light,
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: AppSpacing.sm),
-              Text(
-                'Accede con tu RUT',
-                style: isDark
-                    ? AppTypography.bodyDark
-                    : AppTypography.bodyLight,
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: AppSpacing.xl),
-              TextFormField(
-                controller: _rutController,
-                decoration: const InputDecoration(
-                  labelText: 'RUT',
-                  hintText: '12.345.678-9',
-                  prefixIcon: Icon(Icons.badge_outlined),
+                SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Acceso Empresa',
+                  style: isDark ? AppTypography.h1Dark : AppTypography.h1Light,
+                  textAlign: TextAlign.center,
                 ),
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-                inputFormatters: [RutFormatter()],
-                validator: _validateRut,
-                enabled: !_isLoading,
-              ),
-              SizedBox(height: AppSpacing.md),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  hintText: '••••••',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Ingresa con tu email corporativo',
+                  style: isDark
+                      ? AppTypography.bodyDark
+                      : AppTypography.bodyLight,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.xl),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo empresa',
+                    hintText: 'admin@empresa.cl',
+                    prefixIcon: Icon(Icons.alternate_email_outlined),
                   ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  validator: _validateEmail,
+                  enabled: !_isLoading,
                 ),
-                obscureText: _obscurePassword,
-                textInputAction: TextInputAction.done,
-                validator: _validatePassword,
-                enabled: !_isLoading,
-                onFieldSubmitted: (_) => _handleLogin(),
-              ),
-              SizedBox(height: AppSpacing.xl),
-              PrimaryButton(
-                text: 'Entrar',
-                icon: Icons.login,
-                onPressed: _handleLogin,
-                isLoading: _isLoading,
-              ),
-              if (_biometricAvailable) ...[
                 SizedBox(height: AppSpacing.md),
-                OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _handleBiometricLogin,
-                  icon: const Icon(Icons.fingerprint, size: 24),
-                  label: const Text('Acceder con biometría'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    hintText: '********',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      tooltip: _obscurePassword
+                          ? 'Mostrar contraseña'
+                          : 'Ocultar contraseña',
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  validator: _validatePassword,
+                  enabled: !_isLoading,
+                  onFieldSubmitted: (_) => _handleLogin(),
+                ),
+                SizedBox(height: AppSpacing.xl),
+                PrimaryButton(
+                  text: 'Entrar al panel',
+                  icon: Icons.login,
+                  onPressed: _handleLogin,
+                  isLoading: _isLoading,
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),

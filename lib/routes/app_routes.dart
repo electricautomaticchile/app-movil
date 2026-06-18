@@ -4,6 +4,7 @@ class AppRoutes {
   static const String landing = '/';
   static const String login = '/login';
 
+  static const String empresaDashboard = '/empresa-dashboard';
   static const String clientDashboard = '/client-dashboard';
   static const String miConsumo = '/mi-consumo';
   static const String settings = '/settings';
