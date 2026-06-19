@@ -9,12 +9,16 @@ class ApiService {
   // A-01: URL configurable via --dart-define (no hardcodeada)
   static const String _baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://api-electricautomaticchile.com/api',
+    defaultValue: 'https://electric-backend-tpg9.onrender.com/api',
   );
   static const _storage = FlutterSecureStorage();
+  static const bool _certificatePinningEnabled = bool.fromEnvironment(
+    'ENABLE_CERT_PINNING',
+    defaultValue: false,
+  );
 
-  // C-01: SHA-256 fingerprints del certificado del servidor
-  // Actualizar cuando se renueve el certificado
+  // C-01: SHA-256 fingerprints del certificado del servidor.
+  // Activar con --dart-define=ENABLE_CERT_PINNING=true cuando exista dominio final.
   static const List<String> _pinnedCertFingerprints = [
     // Obtenido con: openssl s_client -connect api-electricautomaticchile.com:443 | openssl x509 -fingerprint -sha256
     '870B9F70182E91B8551B97604AF2C66C4FB3B5E759B0B00D6C0CAACCA7BD9EE0',
@@ -81,17 +85,17 @@ class ApiService {
   static Dio get dio => _dio;
 
   static void _configureCertificatePinning(Dio dio) {
-    if (kDebugMode) return;
+    if (kDebugMode || !_certificatePinningEnabled) return;
 
     (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate =
         (X509Certificate? cert, String host, int port) {
-      if (cert == null || host != Uri.parse(_baseUrl).host) {
-        return false;
-      }
+          if (cert == null || host != Uri.parse(_baseUrl).host) {
+            return false;
+          }
 
-      final fingerprint = sha256.convert(cert.der).toString().toUpperCase();
-      return _pinnedCertFingerprints.contains(fingerprint);
-    };
+          final fingerprint = sha256.convert(cert.der).toString().toUpperCase();
+          return _pinnedCertFingerprints.contains(fingerprint);
+        };
   }
 
   static Future<bool> _tryRefreshToken() async {

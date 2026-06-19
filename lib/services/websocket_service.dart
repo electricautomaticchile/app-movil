@@ -11,7 +11,7 @@ class WebSocketService {
   // A-01: URL configurable via const (usar --dart-define en build)
   static const String _wsUrl = String.fromEnvironment(
     'WS_URL',
-    defaultValue: 'wss://api-electricautomaticchile.com/api/ws/connect',
+    defaultValue: 'wss://electric-backend-tpg9.onrender.com/api/ws/connect',
   );
   static const _storage = FlutterSecureStorage();
 

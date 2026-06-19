@@ -101,5 +101,6 @@ flutter build apk --release
 - Reemplazar datos simulados por servicios reales del backend.
 - Agregar pruebas de widgets para login, dashboard, facturas y pagos.
 - Validar almacenamiento seguro de tokens.
-- Validar pinning/certificados contra dominios reales.
+- Validar pinning/certificados contra dominios reales antes de activar
+  `ENABLE_CERT_PINNING=true`.
 - Configurar firma release y versionado.
