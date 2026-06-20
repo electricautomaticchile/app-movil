@@ -26,9 +26,7 @@ class MonthSelectorButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          vertical: AppSpacing.sm + 2,
-        ),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary
@@ -45,13 +43,20 @@ class MonthSelectorButton extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
-                .copyWith(
-              color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppColors.textPrimaryDark : AppColors.foreground),
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            ),
+            style:
+                (isDark
+                        ? AppTypography.bodySmallDark
+                        : AppTypography.bodySmallLight)
+                    .copyWith(
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.foreground),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
           ),
         ),
       ),

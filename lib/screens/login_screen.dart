@@ -67,9 +67,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       _loginAttempts = 0;
       _lockoutUntil = null;
-      context.read<UserProvider>().setUser(result.user);
+      context.read<UserProvider>().setUser(
+        result.user,
+        permissions: result.permisos,
+      );
 
-      Navigator.pushReplacementNamed(context, AppRoutes.empresaDashboard);
+      Navigator.pushReplacementNamed(
+        context,
+        result.requiereCambioPassword
+            ? AppRoutes.changePassword
+            : AppRoutes.empresaDashboard,
+      );
     } catch (e) {
       if (!mounted) return;
       _loginAttempts++;

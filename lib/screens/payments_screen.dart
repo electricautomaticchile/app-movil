@@ -59,8 +59,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   List<Invoice> get _pendientes =>
       _boletas.where((b) => b.estado != 'pagado').toList();
 
-  List<Invoice> get _vencidas =>
-      _boletas.where((b) => b.isVencido).toList();
+  List<Invoice> get _vencidas => _boletas.where((b) => b.isVencido).toList();
 
   double get _totalDeuda => _pendientes.fold(0.0, (sum, b) => sum + b.monto);
 
@@ -76,18 +75,19 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF1A1A1A) : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? const Color(0xFF1A1A1A)
+          : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor:
-            isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.backgroundLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           color: isDark ? AppColors.textPrimaryDark : AppColors.foreground,
-          onPressed: () => widget.onBack != null
-              ? widget.onBack!()
-              : Navigator.pop(context),
+          onPressed: () =>
+              widget.onBack != null ? widget.onBack!() : Navigator.pop(context),
         ),
         title: Text(
           'Pagos',
@@ -108,36 +108,34 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _buildError()
-              : SingleChildScrollView(
-                  padding: EdgeInsets.all(AppSpacing.screenPadding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Banner de alerta progresivo
-                      if (_deudaResumen != null &&
-                          !_deudaResumen!.isNormal)
-                        _buildAlertBanner(isDark),
-                      if (_deudaResumen != null &&
-                          !_deudaResumen!.isNormal)
-                        SizedBox(height: AppSpacing.lg),
+          ? _buildError()
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(AppSpacing.screenPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Banner de alerta progresivo
+                  if (_deudaResumen != null && !_deudaResumen!.isNormal)
+                    _buildAlertBanner(isDark),
+                  if (_deudaResumen != null && !_deudaResumen!.isNormal)
+                    SizedBox(height: AppSpacing.lg),
 
-                      _buildPendingCard(isDark),
-                      SizedBox(height: AppSpacing.xxl),
+                  _buildPendingCard(isDark),
+                  SizedBox(height: AppSpacing.xxl),
 
-                      // Boletas vencidas destacadas
-                      if (_vencidas.isNotEmpty) ...[
-                        _buildVencidasSection(isDark),
-                        SizedBox(height: AppSpacing.xxl),
-                      ],
+                  // Boletas vencidas destacadas
+                  if (_vencidas.isNotEmpty) ...[
+                    _buildVencidasSection(isDark),
+                    SizedBox(height: AppSpacing.xxl),
+                  ],
 
-                      _buildPaymentMethods(isDark),
-                      SizedBox(height: AppSpacing.xxl),
-                      _buildHistory(isDark),
-                      SizedBox(height: AppSpacing.xl),
-                    ],
-                  ),
-                ),
+                  _buildPaymentMethods(isDark),
+                  SizedBox(height: AppSpacing.xxl),
+                  _buildHistory(isDark),
+                  SizedBox(height: AppSpacing.xl),
+                ],
+              ),
+            ),
     );
   }
 
@@ -178,23 +176,25 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                   resumen.isCorte
                       ? 'Servicio Suspendido'
                       : resumen.isCritico
-                          ? 'Riesgo de Suspensión'
-                          : 'Boletas Vencidas',
-                  style: (isDark
-                          ? AppTypography.bodyDark
-                          : AppTypography.bodyLight)
-                      .copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: bannerColor,
-                  ),
+                      ? 'Riesgo de Suspensión'
+                      : 'Boletas Vencidas',
+                  style:
+                      (isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight)
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: bannerColor,
+                          ),
                 ),
                 SizedBox(height: AppSpacing.xs),
                 Text(
                   resumen.mensajeAlerta,
-                  style: (isDark
-                          ? AppTypography.bodySmallDark
-                          : AppTypography.bodySmallLight)
-                      .copyWith(color: bannerColor.withValues(alpha: 0.9)),
+                  style:
+                      (isDark
+                              ? AppTypography.bodySmallDark
+                              : AppTypography.bodySmallLight)
+                          .copyWith(color: bannerColor.withValues(alpha: 0.9)),
                 ),
               ],
             ),
@@ -217,8 +217,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           SizedBox(height: AppSpacing.md),
           Text(
             _error!,
-            style: AppTypography.bodyLight
-                .copyWith(color: AppColors.mutedForeground),
+            style: AppTypography.bodyLight.copyWith(
+              color: AppColors.mutedForeground,
+            ),
           ),
           SizedBox(height: AppSpacing.lg),
           ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
@@ -243,10 +244,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: (_vencidas.length >= 2
-                    ? AppColors.danger
-                    : AppColors.primary)
-                .withValues(alpha: 0.3),
+            color:
+                (_vencidas.length >= 2 ? AppColors.danger : AppColors.primary)
+                    .withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -274,8 +274,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusFull),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                   ),
                   child: Text(
                     'Vence: ${vence!.formattedVencimiento}',
@@ -315,11 +314,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               onPressed: _pendientes.isEmpty
                   ? null
                   : () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Redirigiendo a pasarela de pago...'),
-                        ),
+                      const SnackBar(
+                        content: Text('Redirigiendo a pasarela de pago...'),
                       ),
+                    ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: _vencidas.length >= 2
@@ -328,8 +326,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 disabledBackgroundColor: Colors.white54,
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusFull),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                 ),
                 elevation: 0,
               ),
@@ -353,8 +350,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.warning_amber_rounded,
-                color: AppColors.danger, size: 20),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.danger,
+              size: 20,
+            ),
             SizedBox(width: AppSpacing.sm),
             Text(
               'BOLETAS VENCIDAS',
@@ -448,18 +448,16 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 padding: EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusSm),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 24),
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
                 title,
-                style: (isDark
-                        ? AppTypography.bodyDark
-                        : AppTypography.bodyLight)
-                    .copyWith(fontWeight: FontWeight.w600),
+                style:
+                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                        .copyWith(fontWeight: FontWeight.w600),
               ),
               SizedBox(height: AppSpacing.xs),
               Text(
@@ -510,8 +508,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               padding: EdgeInsets.all(AppSpacing.xl),
               child: Text(
                 'No hay boletas registradas',
-                style: AppTypography.bodyLight
-                    .copyWith(color: AppColors.mutedForeground),
+                style: AppTypography.bodyLight.copyWith(
+                  color: AppColors.mutedForeground,
+                ),
               ),
             ),
           )
@@ -538,8 +537,8 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           color: boleta.isVencido
               ? AppColors.danger.withValues(alpha: 0.3)
               : isDark
-                  ? AppColors.borderDark
-                  : AppColors.border,
+              ? AppColors.borderDark
+              : AppColors.border,
         ),
       ),
       child: Row(
@@ -563,10 +562,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               children: [
                 Text(
                   boleta.periodo,
-                  style: (isDark
-                          ? AppTypography.bodyDark
-                          : AppTypography.bodyLight)
-                      .copyWith(fontWeight: FontWeight.w500),
+                  style:
+                      (isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight)
+                          .copyWith(fontWeight: FontWeight.w500),
                 ),
                 SizedBox(height: AppSpacing.xs),
                 Text(
@@ -577,8 +577,8 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     color: boleta.isVencido
                         ? AppColors.danger
                         : isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.mutedForeground,
+                        ? AppColors.textSecondaryDark
+                        : AppColors.mutedForeground,
                     fontWeight: boleta.isVencido
                         ? FontWeight.w600
                         : FontWeight.normal,
@@ -592,10 +592,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             children: [
               Text(
                 boleta.formattedMonto,
-                style: (isDark
-                        ? AppTypography.bodyDark
-                        : AppTypography.bodyLight)
-                    .copyWith(fontWeight: FontWeight.w600),
+                style:
+                    (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                        .copyWith(fontWeight: FontWeight.w600),
               ),
               SizedBox(height: AppSpacing.xs),
               StatusBadge(
@@ -613,7 +612,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   String _formatNumber(int n) => n.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]}.',
-      );
+    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+    (m) => '${m[1]}.',
+  );
 }

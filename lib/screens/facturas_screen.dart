@@ -108,7 +108,11 @@ class _FacturasScreenState extends State<FacturasScreen> {
     );
   }
 
-  Widget _buildAlertBanner(BuildContext context, bool isDark, InvoiceProvider provider) {
+  Widget _buildAlertBanner(
+    BuildContext context,
+    bool isDark,
+    InvoiceProvider provider,
+  ) {
     final resumen = provider.deudaResumen!;
     Color bannerColor;
     IconData bannerIcon;
@@ -145,16 +149,25 @@ class _FacturasScreenState extends State<FacturasScreen> {
                   resumen.isCorte
                       ? 'Servicio suspendido'
                       : resumen.isCritico
-                          ? 'Riesgo de suspensión'
-                          : 'Boletas vencidas',
-                  style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
-                      .copyWith(fontWeight: FontWeight.w700, color: bannerColor),
+                      ? 'Riesgo de suspensión'
+                      : 'Boletas vencidas',
+                  style:
+                      (isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight)
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: bannerColor,
+                          ),
                 ),
                 SizedBox(height: AppSpacing.xs),
                 Text(
                   resumen.mensajeAlerta,
-                  style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
-                      .copyWith(color: bannerColor.withValues(alpha: 0.9)),
+                  style:
+                      (isDark
+                              ? AppTypography.bodySmallDark
+                              : AppTypography.bodySmallLight)
+                          .copyWith(color: bannerColor.withValues(alpha: 0.9)),
                 ),
               ],
             ),
@@ -507,7 +520,8 @@ class _FacturasScreenState extends State<FacturasScreen> {
             // Handle
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.borderDark : AppColors.border,
                   borderRadius: BorderRadius.circular(2),
@@ -518,10 +532,18 @@ class _FacturasScreenState extends State<FacturasScreen> {
             // Título
             Row(
               children: [
-                Icon(Icons.receipt_long_outlined, color: AppColors.primary, size: 24),
+                Icon(
+                  Icons.receipt_long_outlined,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
                 SizedBox(width: AppSpacing.sm),
-                Text(boleta.periodo,
-                    style: (isDark ? AppTypography.h3Dark : AppTypography.h3Light)),
+                Text(
+                  boleta.periodo,
+                  style: (isDark
+                      ? AppTypography.h3Dark
+                      : AppTypography.h3Light),
+                ),
                 const Spacer(),
                 StatusBadge(
                   label: status.label,
@@ -536,11 +558,19 @@ class _FacturasScreenState extends State<FacturasScreen> {
             _detalleRow('Consumo', boleta.formattedConsumo, isDark),
             _detalleRow('Emitida', boleta.formattedDate, isDark),
             if (boleta.fechaVencimiento != null)
-              _detalleRow('Vencimiento', boleta.formattedVencimiento, isDark,
-                  color: boleta.isVencido ? AppColors.danger : null),
+              _detalleRow(
+                'Vencimiento',
+                boleta.formattedVencimiento,
+                isDark,
+                color: boleta.isVencido ? AppColors.danger : null,
+              ),
             if (boleta.isPagado && boleta.fechaPago != null)
-              _detalleRow('Pagada el', _formatDate(boleta.fechaPago!), isDark,
-                  color: AppColors.success),
+              _detalleRow(
+                'Pagada el',
+                _formatDate(boleta.fechaPago!),
+                isDark,
+                color: AppColors.success,
+              ),
             SizedBox(height: AppSpacing.xl),
             // Botón PDF
             SizedBox(
@@ -573,28 +603,58 @@ class _FacturasScreenState extends State<FacturasScreen> {
     );
   }
 
-  Widget _detalleRow(String label, String value, bool isDark,
-      {bool bold = false, Color? color}) {
+  Widget _detalleRow(
+    String label,
+    String value,
+    bool isDark, {
+    bool bold = false,
+    Color? color,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: (isDark ? AppTypography.bodySmallDark : AppTypography.bodySmallLight)
-                  .copyWith(color: isDark ? AppColors.textSecondaryDark : AppColors.mutedForeground)),
-          Text(value,
-              style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight).copyWith(
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: color,
-              )),
+          Text(
+            label,
+            style:
+                (isDark
+                        ? AppTypography.bodySmallDark
+                        : AppTypography.bodySmallLight)
+                    .copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.mutedForeground,
+                    ),
+          ),
+          Text(
+            value,
+            style: (isDark ? AppTypography.bodyDark : AppTypography.bodyLight)
+                .copyWith(
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                ),
+          ),
         ],
       ),
     );
   }
 
   String _formatDate(DateTime dt) {
-    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
     return '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
   }
 

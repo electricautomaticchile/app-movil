@@ -5,6 +5,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/empresa_api_service.dart';
 import '../theme/colors.dart';
+import '../widgets/enterprise_components.dart';
 
 class EmpresaDashboardScreen extends StatefulWidget {
   const EmpresaDashboardScreen({super.key});
@@ -16,6 +17,8 @@ class EmpresaDashboardScreen extends StatefulWidget {
 class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
   late Future<EmpresaDashboardData> _dashboardFuture;
   int _selectedIndex = 0;
+  String _query = '';
+  String _filter = 'Todos';
 
   static const _sections = [
     _DashboardSection('dashboard', 'Inicio', Icons.dashboard_outlined),
@@ -31,9 +34,9 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
       Icons.notifications_active_outlined,
     ),
     _DashboardSection('soporte', 'Soporte', Icons.support_agent_outlined),
-    _DashboardSection('estadisticas', 'Estadísticas', Icons.bar_chart_outlined),
+    _DashboardSection('estadisticas', 'Datos', Icons.bar_chart_outlined),
     _DashboardSection('usuarios', 'Usuarios', Icons.manage_accounts_outlined),
-    _DashboardSection('configuracion', 'Configuración', Icons.tune_outlined),
+    _DashboardSection('configuracion', 'Ajustes', Icons.tune_outlined),
   ];
 
   @override
@@ -55,9 +58,19 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
   }
 
+  void _selectSection(int index) {
+    if (index < 0 || index >= _sections.length) return;
+    setState(() {
+      _selectedIndex = index;
+      _query = '';
+      _filter = 'Todos';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>().user;
+    final mobileSelectedIndex = _selectedIndex < 4 ? _selectedIndex : 4;
 
     return Scaffold(
       appBar: AppBar(
@@ -67,11 +80,7 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Panel Empresa',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            const Text('Panel Empresa'),
             const SizedBox(height: 2),
             Text(
               user?.correo.isNotEmpty == true
@@ -82,7 +91,7 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withValues(alpha: 0.68),
+                ).colorScheme.onSurface.withValues(alpha: 0.66),
               ),
             ),
           ],
@@ -91,11 +100,12 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
           IconButton(
             tooltip: 'Actualizar',
             icon: const Icon(Icons.refresh_outlined),
-            onPressed: () {
-              setState(() {
-                _dashboardFuture = EmpresaApiService.loadDashboard();
-              });
-            },
+            onPressed: _refresh,
+          ),
+          IconButton(
+            tooltip: 'Configuración',
+            icon: const Icon(Icons.tune_outlined),
+            onPressed: () => _selectSection(7),
           ),
           IconButton(
             tooltip: 'Cerrar sesión',
@@ -115,44 +125,51 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
           if (snapshot.hasError && !snapshot.hasData) {
             return _DashboardError(
               message: 'No se pudo cargar el dashboard empresa.',
-              onRetry: () {
-                setState(() {
-                  _dashboardFuture = EmpresaApiService.loadDashboard();
-                });
-              },
+              onRetry: _refresh,
             );
           }
 
           final data = snapshot.data;
           if (data == null) {
-            return const _EmptyState(
+            return const EnterpriseEmptyState(
               icon: Icons.dashboard_outlined,
               title: 'Sin datos disponibles',
               message: 'Vuelve a actualizar el panel.',
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 900;
+              final content = RefreshIndicator(
+                onRefresh: _refresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    wide ? 24 : 16,
+                    12,
+                    wide ? 24 : 16,
+                    wide ? 28 : 96,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1180),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _CompanyHeader(data: data),
-                        const SizedBox(height: 14),
-                        _SectionTabs(
-                          sections: _sections,
-                          selectedIndex: _selectedIndex,
-                          onSelected: (index) {
-                            setState(() => _selectedIndex = index);
-                          },
-                        ),
                         const SizedBox(height: 18),
+                        if (_isSearchableSection) ...[
+                          _ListControls(
+                            query: _query,
+                            filter: _filter,
+                            filters: _filtersForCurrentSection,
+                            onQueryChanged: (value) =>
+                                setState(() => _query = value),
+                            onFilterChanged: (value) =>
+                                setState(() => _filter = value),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 180),
                           child: KeyedSubtree(
@@ -164,38 +181,320 @@ class _EmpresaDashboardScreenState extends State<EmpresaDashboardScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
+              );
+
+              if (!wide) return content;
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _EnterpriseRail(
+                    sections: _sections,
+                    selectedIndex: _selectedIndex,
+                    onSelected: _selectSection,
+                  ),
+                  VerticalDivider(
+                    width: 1,
+                    color: enterpriseBorderColor(context),
+                  ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: content,
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
+      bottomNavigationBar: MediaQuery.of(context).size.width >= 900
+          ? null
+          : NavigationBar(
+              selectedIndex: mobileSelectedIndex,
+              onDestinationSelected: (index) {
+                if (index == 4) {
+                  _showMoreSections();
+                  return;
+                }
+                _selectSection(index);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard),
+                  label: 'Inicio',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.groups_2_outlined),
+                  selectedIcon: Icon(Icons.groups_2),
+                  label: 'Clientes',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.electrical_services_outlined),
+                  selectedIcon: Icon(Icons.electrical_services),
+                  label: 'Equipos',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.notifications_active_outlined),
+                  selectedIcon: Icon(Icons.notifications_active),
+                  label: 'Alertas',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.more_horiz),
+                  selectedIcon: Icon(Icons.more),
+                  label: 'Más',
+                ),
+              ],
+            ),
     );
+  }
+
+  bool get _isSearchableSection {
+    return const {
+      'clientes',
+      'dispositivos',
+      'alertas',
+      'soporte',
+      'usuarios',
+    }.contains(_sections[_selectedIndex].id);
+  }
+
+  List<String> get _filtersForCurrentSection {
+    switch (_sections[_selectedIndex].id) {
+      case 'clientes':
+      case 'usuarios':
+        return const ['Todos', 'Activos', 'Inactivos'];
+      case 'dispositivos':
+        return const ['Todos', 'Activos', 'Inactivos', 'Alertas'];
+      case 'alertas':
+        return const ['Todos', 'Pendientes', 'Leídas', 'Críticas'];
+      case 'soporte':
+        return const ['Todos', 'Abiertos', 'Pendientes', 'Cerrados'];
+      default:
+        return const ['Todos'];
+    }
   }
 
   Widget _buildSection(EmpresaDashboardData data) {
     switch (_sections[_selectedIndex].id) {
       case 'clientes':
-        return _ClientesSection(clientes: data.clientes, stats: data.stats);
+        return _ClientesSection(
+          clientes: _filterClientes(data.clientes),
+          stats: data.stats,
+          onOpen: _showRecordDetails,
+        );
       case 'dispositivos':
         return _DispositivosSection(
-          dispositivos: data.dispositivos,
+          dispositivos: _filterDispositivos(data.dispositivos),
           stats: data.stats,
+          onOpen: _showRecordDetails,
         );
       case 'alertas':
-        return _AlertasSection(alertas: data.alertas, stats: data.stats);
+        return _AlertasSection(
+          alertas: _filterAlertas(data.alertas),
+          stats: data.stats,
+          onOpen: _showRecordDetails,
+        );
       case 'soporte':
-        return _SoporteSection(tickets: data.tickets, stats: data.stats);
+        return _SoporteSection(
+          tickets: _filterTickets(data.tickets),
+          stats: data.stats,
+          onOpen: _showRecordDetails,
+        );
       case 'estadisticas':
         return _EstadisticasSection(data: data);
       case 'usuarios':
-        return _UsuariosSection(usuarios: data.usuarios);
+        return _UsuariosSection(
+          usuarios: _filterUsuarios(data.usuarios),
+          onOpen: _showRecordDetails,
+        );
       case 'configuracion':
         return _ConfiguracionSection(data: data);
       default:
-        return _OverviewSection(data: data);
+        return _OverviewSection(data: data, onSectionSelected: _selectSection);
     }
   }
+
+  List<Map<String, dynamic>> _filterClientes(List<Map<String, dynamic>> items) {
+    return items.where((item) {
+      final active = _boolValue(item, ['activo']);
+      return _matchesQuery(item) &&
+          (_filter == 'Todos' ||
+              (_filter == 'Activos' && active) ||
+              (_filter == 'Inactivos' && !active));
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterDispositivos(
+    List<Map<String, dynamic>> items,
+  ) {
+    return items.where((item) {
+      final estado = _text(
+        item,
+        ['estado'],
+        fallback: _boolValue(item, ['status', 'activo'])
+            ? 'activo'
+            : 'inactivo',
+      ).toLowerCase();
+      final active = estado.contains('activo') && !estado.contains('inactivo');
+      final alert =
+          estado.contains('alert') ||
+          estado.contains('error') ||
+          estado.contains('offline');
+      return _matchesQuery(item) &&
+          (_filter == 'Todos' ||
+              (_filter == 'Activos' && active) ||
+              (_filter == 'Inactivos' && !active) ||
+              (_filter == 'Alertas' && alert));
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterAlertas(List<Map<String, dynamic>> items) {
+    return items.where((item) {
+      final read = _boolValue(item, ['leida']);
+      final severity = _text(item, [
+        'severidad',
+        'tipo',
+      ], fallback: 'informativa').toLowerCase();
+      final critical = severity.contains('crit') || severity.contains('alta');
+      return _matchesQuery(item) &&
+          (_filter == 'Todos' ||
+              (_filter == 'Pendientes' && !read) ||
+              (_filter == 'Leídas' && read) ||
+              (_filter == 'Críticas' && critical));
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterTickets(List<Map<String, dynamic>> items) {
+    return items.where((item) {
+      final status = _text(item, ['estado'], fallback: 'abierto').toLowerCase();
+      return _matchesQuery(item) &&
+          (_filter == 'Todos' ||
+              (_filter == 'Abiertos' && status.contains('abierto')) ||
+              (_filter == 'Pendientes' && status.contains('pend')) ||
+              (_filter == 'Cerrados' &&
+                  (status.contains('cerr') || status.contains('resuelto'))));
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterUsuarios(List<Map<String, dynamic>> items) {
+    return items.where((item) {
+      final active = _boolValue(item, ['activo']);
+      return _matchesQuery(item) &&
+          (_filter == 'Todos' ||
+              (_filter == 'Activos' && active) ||
+              (_filter == 'Inactivos' && !active));
+    }).toList();
+  }
+
+  bool _matchesQuery(Map<String, dynamic> item) {
+    final normalized = _query.trim().toLowerCase();
+    if (normalized.isEmpty) return true;
+    return item.values
+        .map((value) => value.toString().toLowerCase())
+        .join(' ')
+        .contains(normalized);
+  }
+
+  void _showMoreSections() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            children: [
+              Text(
+                'Más módulos',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              for (var i = 4; i < _sections.length; i++)
+                ListTile(
+                  leading: Icon(_sections[i].icon),
+                  title: Text(_sections[i].label),
+                  selected: _selectedIndex == i,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _selectSection(i);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRecordDetails({
+    required String title,
+    required String subtitle,
+    required List<EnterpriseInfoLine> details,
+    EnterpriseStatusBadge? badge,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.66),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (badge != null) badge,
+                  ],
+                ),
+                const SizedBox(height: 18),
+                for (final line in details)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: EnterpriseInlineInfo(line: line),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
+
+typedef OpenRecord =
+    void Function({
+      required String title,
+      required String subtitle,
+      required List<EnterpriseInfoLine> details,
+      EnterpriseStatusBadge? badge,
+    });
 
 class _DashboardSection {
   final String id;
@@ -203,6 +502,88 @@ class _DashboardSection {
   final IconData icon;
 
   const _DashboardSection(this.id, this.label, this.icon);
+}
+
+class _EnterpriseRail extends StatelessWidget {
+  final List<_DashboardSection> sections;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _EnterpriseRail({
+    required this.sections,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationRail(
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onSelected,
+      labelType: NavigationRailLabelType.all,
+      minWidth: 96,
+      groupAlignment: -0.92,
+      destinations: [
+        for (final section in sections)
+          NavigationRailDestination(
+            icon: Icon(section.icon),
+            selectedIcon: Icon(section.icon),
+            label: Text(section.label),
+          ),
+      ],
+    );
+  }
+}
+
+class _ListControls extends StatelessWidget {
+  final String query;
+  final String filter;
+  final List<String> filters;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String> onFilterChanged;
+
+  const _ListControls({
+    required this.query,
+    required this.filter,
+    required this.filters,
+    required this.onQueryChanged,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 720;
+        final search = EnterpriseSearchField(
+          value: query,
+          hint: 'Buscar en este módulo',
+          onChanged: onQueryChanged,
+        );
+        final chips = EnterpriseFilterBar(
+          values: filters,
+          selected: filter,
+          onSelected: onFilterChanged,
+        );
+
+        if (!wide) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [search, const SizedBox(height: 10), chips],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: search),
+            const SizedBox(width: 12),
+            SizedBox(width: 380, child: chips),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _CompanyHeader extends StatelessWidget {
@@ -215,18 +596,12 @@ class _CompanyHeader extends StatelessWidget {
     final user = context.watch<UserProvider>().user;
     final role = user?.role.isNotEmpty == true ? user!.role : 'EMPRESA';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderColor(context)),
-      ),
+    return EnterpriseCard(
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
@@ -245,20 +620,23 @@ class _CompanyHeader extends StatelessWidget {
                   user?.nombre.isNotEmpty == true ? user!.nombre : 'Empresa',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    _StatusBadge(label: role, color: AppColors.info),
-                    _StatusBadge(
+                    EnterpriseStatusBadge(label: role, color: AppColors.info),
+                    EnterpriseStatusBadge(
                       label: 'Actualizado ${_time(data.fetchedAt)}',
                       color: AppColors.success,
                     ),
+                    if (data.failedModules.isNotEmpty)
+                      EnterpriseStatusBadge(
+                        label: 'Parcial ${data.failedModules.length}',
+                        color: AppColors.warning,
+                      ),
                   ],
                 ),
               ],
@@ -270,61 +648,11 @@ class _CompanyHeader extends StatelessWidget {
   }
 }
 
-class _SectionTabs extends StatelessWidget {
-  final List<_DashboardSection> sections;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  const _SectionTabs({
-    required this.sections,
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: sections.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final section = sections[index];
-          final selected = index == selectedIndex;
-          return ChoiceChip(
-            selected: selected,
-            avatar: Icon(
-              section.icon,
-              size: 18,
-              color: selected
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : Theme.of(context).colorScheme.onSurface,
-            ),
-            label: Text(section.label),
-            onSelected: (_) => onSelected(index),
-            selectedColor: Theme.of(context).colorScheme.primary,
-            labelStyle: TextStyle(
-              color: selected
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: _borderColor(context)),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _OverviewSection extends StatelessWidget {
   final EmpresaDashboardData data;
+  final ValueChanged<int> onSectionSelected;
 
-  const _OverviewSection({required this.data});
+  const _OverviewSection({required this.data, required this.onSectionSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -333,41 +661,47 @@ class _OverviewSection extends StatelessWidget {
     final clientesTotales = _stat(stats, 'clientesTotales');
     final dispositivosActivos = _stat(stats, 'dispositivosActivos');
     final dispositivosTotales = _stat(stats, 'dispositivosTotales');
-    final ticketsPendientes = _stat(stats, 'ticketsPendientes');
     final alertasActivas = _stat(stats, 'alertasActivas');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionTitle(
+        EnterpriseSectionHeader(
           icon: Icons.dashboard_outlined,
-          title: 'Dashboard Empresa',
-          subtitle: 'Resumen operativo del servicio',
+          title: 'Operación general',
+          subtitle: 'Métricas clave y actividad reciente',
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () => onSectionSelected(5),
+              icon: const Icon(Icons.analytics_outlined),
+              label: const Text('Ver datos'),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _MetricGrid(
           children: [
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Ingresos mensuales',
               value: _formatMoney(_stat(stats, 'ingresosMensuales')),
               icon: Icons.attach_money,
               color: AppColors.success,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Consumo total',
               value: _formatKwh(_stat(stats, 'consumoTotal')),
               icon: Icons.local_fire_department_outlined,
               color: AppColors.primary,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Alertas activas',
               value: _whole(alertasActivas),
               icon: Icons.warning_amber_outlined,
               color: AppColors.danger,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Tickets pendientes',
-              value: _whole(ticketsPendientes),
+              value: _whole(_stat(stats, 'ticketsPendientes')),
               icon: Icons.support_agent_outlined,
               color: AppColors.info,
             ),
@@ -382,6 +716,7 @@ class _OverviewSection extends StatelessWidget {
               value: '${_whole(clientesActivos)} / ${_whole(clientesTotales)}',
               color: AppColors.info,
               progress: _ratio(clientesActivos, clientesTotales),
+              onTap: () => onSectionSelected(1),
             ),
             _SummaryRow(
               icon: Icons.electrical_services,
@@ -390,6 +725,7 @@ class _OverviewSection extends StatelessWidget {
                   '${_whole(dispositivosActivos)} / ${_whole(dispositivosTotales)}',
               color: AppColors.success,
               progress: _ratio(dispositivosActivos, dispositivosTotales),
+              onTap: () => onSectionSelected(2),
             ),
             _SummaryRow(
               icon: Icons.notifications_active_outlined,
@@ -397,6 +733,7 @@ class _OverviewSection extends StatelessWidget {
               value: _whole(alertasActivas),
               color: AppColors.danger,
               progress: alertasActivas > 0 ? 0.72 : 0,
+              onTap: () => onSectionSelected(3),
             ),
           ],
         ),
@@ -410,62 +747,70 @@ class _OverviewSection extends StatelessWidget {
 class _ClientesSection extends StatelessWidget {
   final List<Map<String, dynamic>> clientes;
   final Map<String, dynamic> stats;
+  final OpenRecord onOpen;
 
-  const _ClientesSection({required this.clientes, required this.stats});
+  const _ClientesSection({
+    required this.clientes,
+    required this.stats,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SectionTitle(
-          icon: Icons.groups_2_outlined,
-          title: 'Gestión de Clientes',
-          subtitle:
-              '${_whole(_stat(stats, 'clientesActivos'))} activos de ${_whole(_stat(stats, 'clientesTotales'))}',
-        ),
-        const SizedBox(height: 12),
-        if (clientes.isEmpty)
-          const _EmptyState(
-            icon: Icons.groups_2_outlined,
-            title: 'No hay clientes para mostrar',
-            message: 'Cuando existan clientes asociados aparecerán aquí.',
-          )
-        else
-          ...clientes
-              .take(20)
-              .map(
-                (cliente) => _RecordCard(
-                  icon: Icons.person_outline,
-                  color: _activeColor(_boolValue(cliente, ['activo'])),
-                  title: _text(cliente, ['nombre'], fallback: 'Cliente'),
-                  subtitle: _text(cliente, [
-                    'numeroCliente',
-                    'correo',
-                  ], fallback: 'Sin número asignado'),
-                  badge: _StatusBadge(
-                    label: _boolValue(cliente, ['activo'])
-                        ? 'Activo'
-                        : 'Inactivo',
-                    color: _activeColor(_boolValue(cliente, ['activo'])),
-                  ),
-                  details: [
-                    _InfoLine(
-                      Icons.email_outlined,
-                      _text(cliente, ['correo'], fallback: 'Sin correo'),
-                    ),
-                    _InfoLine(
-                      Icons.location_on_outlined,
-                      _text(cliente, [
-                        'comuna',
-                        'ciudad',
-                        'direccion',
-                      ], fallback: 'Sin ubicación'),
-                    ),
-                  ],
-                ),
-              ),
-      ],
+    return _RecordListSection(
+      header: EnterpriseSectionHeader(
+        icon: Icons.groups_2_outlined,
+        title: 'Gestión de clientes',
+        subtitle:
+            '${_whole(_stat(stats, 'clientesActivos'))} activos de ${_whole(_stat(stats, 'clientesTotales'))}',
+      ),
+      empty: const EnterpriseEmptyState(
+        icon: Icons.groups_2_outlined,
+        title: 'No hay clientes para mostrar',
+        message: 'Cambia la búsqueda o actualiza el panel.',
+      ),
+      children: clientes.take(40).map((cliente) {
+        final active = _boolValue(cliente, ['activo']);
+        final badge = EnterpriseStatusBadge(
+          label: active ? 'Activo' : 'Inactivo',
+          color: _activeColor(active),
+        );
+        final details = [
+          EnterpriseInfoLine(
+            Icons.email_outlined,
+            _text(cliente, ['correo'], fallback: 'Sin correo'),
+          ),
+          EnterpriseInfoLine(
+            Icons.phone_outlined,
+            _text(cliente, ['telefono'], fallback: 'Sin teléfono'),
+          ),
+          EnterpriseInfoLine(
+            Icons.location_on_outlined,
+            _text(cliente, [
+              'comuna',
+              'ciudad',
+              'direccion',
+            ], fallback: 'Sin ubicación'),
+          ),
+        ];
+        return EnterpriseRecordCard(
+          icon: Icons.person_outline,
+          color: _activeColor(active),
+          title: _text(cliente, ['nombre'], fallback: 'Cliente'),
+          subtitle: _text(cliente, [
+            'numeroCliente',
+            'correo',
+          ], fallback: 'Sin número asignado'),
+          badge: badge,
+          details: details,
+          onTap: () => onOpen(
+            title: _text(cliente, ['nombre'], fallback: 'Cliente'),
+            subtitle: _text(cliente, ['numeroCliente'], fallback: 'Sin número'),
+            details: details,
+            badge: badge,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -473,67 +818,93 @@ class _ClientesSection extends StatelessWidget {
 class _DispositivosSection extends StatelessWidget {
   final List<Map<String, dynamic>> dispositivos;
   final Map<String, dynamic> stats;
+  final OpenRecord onOpen;
 
-  const _DispositivosSection({required this.dispositivos, required this.stats});
+  const _DispositivosSection({
+    required this.dispositivos,
+    required this.stats,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SectionTitle(
-          icon: Icons.electrical_services,
-          title: 'Dispositivos Activos',
-          subtitle:
-              '${_whole(_stat(stats, 'dispositivosActivos'))} operativos de ${_whole(_stat(stats, 'dispositivosTotales'))}',
-        ),
-        const SizedBox(height: 12),
-        if (dispositivos.isEmpty)
-          const _EmptyState(
-            icon: Icons.electrical_services,
-            title: 'No hay dispositivos para mostrar',
-            message: 'Los medidores y módulos IoT aparecerán aquí.',
-          )
-        else
-          ...dispositivos.take(20).map((dispositivo) {
-            final estado = _text(
-              dispositivo,
-              ['estado'],
-              fallback: _boolValue(dispositivo, ['status', 'activo'])
-                  ? 'activo'
-                  : 'inactivo',
-            );
-            final lectura = _value(dispositivo, 'ultimaLectura.energy');
-            return _RecordCard(
-              icon: Icons.electric_meter_outlined,
-              color: _stateColor(estado),
-              title: _text(dispositivo, [
-                'nombre',
-                'name',
-                'numeroDispositivo',
-              ], fallback: 'Dispositivo'),
-              subtitle: _text(dispositivo, [
-                'numeroDispositivo',
-                'type',
-                'tipo',
-              ], fallback: 'Sin identificador'),
-              badge: _StatusBadge(label: estado, color: _stateColor(estado)),
-              details: [
-                _InfoLine(
-                  Icons.person_pin_circle_outlined,
-                  _text(dispositivo, [
-                    'cliente.nombre',
-                    'clienteId',
-                  ], fallback: 'Sin cliente asignado'),
-                ),
-                _InfoLine(
-                  Icons.bolt_outlined,
-                  lectura is num ? _formatKwh(lectura) : 'Sin lectura reciente',
-                ),
-              ],
-            );
-          }),
-      ],
+    return _RecordListSection(
+      header: EnterpriseSectionHeader(
+        icon: Icons.electrical_services,
+        title: 'Dispositivos y medidores',
+        subtitle:
+            '${_whole(_stat(stats, 'dispositivosActivos'))} operativos de ${_whole(_stat(stats, 'dispositivosTotales'))}',
+      ),
+      empty: const EnterpriseEmptyState(
+        icon: Icons.electrical_services,
+        title: 'No hay dispositivos para mostrar',
+        message: 'Cambia la búsqueda o actualiza el panel.',
+      ),
+      children: dispositivos.take(40).map((dispositivo) {
+        final estado = _text(
+          dispositivo,
+          ['estado'],
+          fallback: _boolValue(dispositivo, ['status', 'activo'])
+              ? 'activo'
+              : 'inactivo',
+        );
+        final lectura = _value(dispositivo, 'ultimaLectura.energy');
+        final badge = EnterpriseStatusBadge(
+          label: estado,
+          color: _stateColor(estado),
+        );
+        final details = [
+          EnterpriseInfoLine(
+            Icons.person_pin_circle_outlined,
+            _text(dispositivo, [
+              'cliente.nombre',
+              'clienteId',
+            ], fallback: 'Sin cliente asignado'),
+          ),
+          EnterpriseInfoLine(
+            Icons.bolt_outlined,
+            lectura is num ? _formatKwh(lectura) : 'Sin lectura reciente',
+          ),
+          EnterpriseInfoLine(
+            Icons.qr_code_2_outlined,
+            _text(dispositivo, [
+              'numeroDispositivo',
+              'id',
+              '_id',
+            ], fallback: 'Sin identificador'),
+          ),
+        ];
+        return EnterpriseRecordCard(
+          icon: Icons.electric_meter_outlined,
+          color: _stateColor(estado),
+          title: _text(dispositivo, [
+            'nombre',
+            'name',
+            'numeroDispositivo',
+          ], fallback: 'Dispositivo'),
+          subtitle: _text(dispositivo, [
+            'numeroDispositivo',
+            'type',
+            'tipo',
+          ], fallback: 'Sin identificador'),
+          badge: badge,
+          details: details,
+          onTap: () => onOpen(
+            title: _text(dispositivo, [
+              'nombre',
+              'name',
+              'numeroDispositivo',
+            ], fallback: 'Dispositivo'),
+            subtitle: _text(dispositivo, [
+              'numeroDispositivo',
+              'type',
+              'tipo',
+            ], fallback: 'Sin identificador'),
+            details: details,
+            badge: badge,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -541,57 +912,68 @@ class _DispositivosSection extends StatelessWidget {
 class _AlertasSection extends StatelessWidget {
   final List<Map<String, dynamic>> alertas;
   final Map<String, dynamic> stats;
+  final OpenRecord onOpen;
 
-  const _AlertasSection({required this.alertas, required this.stats});
+  const _AlertasSection({
+    required this.alertas,
+    required this.stats,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SectionTitle(
-          icon: Icons.notifications_active_outlined,
-          title: 'Alertas del Sistema',
-          subtitle: '${_whole(_stat(stats, 'alertasActivas'))} activas',
-        ),
-        const SizedBox(height: 12),
-        if (alertas.isEmpty)
-          const _EmptyState(
-            icon: Icons.notifications_active_outlined,
-            title: 'Sin alertas visibles',
-            message: 'Las notificaciones críticas aparecerán en esta sección.',
-          )
-        else
-          ...alertas.take(20).map((alerta) {
-            final severidad = _text(alerta, [
-              'severidad',
-              'tipo',
-            ], fallback: 'informativa');
-            return _RecordCard(
-              icon: Icons.warning_amber_outlined,
-              color: _stateColor(severidad),
-              title: _text(alerta, ['titulo'], fallback: 'Alerta'),
-              subtitle: _text(alerta, ['mensaje'], fallback: 'Sin descripción'),
-              badge: _StatusBadge(
-                label: severidad,
-                color: _stateColor(severidad),
-              ),
-              details: [
-                _InfoLine(
-                  Icons.sensors_outlined,
-                  _text(alerta, [
-                    'dispositivoId',
-                    'destinatarioId',
-                  ], fallback: 'Sin origen asociado'),
-                ),
-                _InfoLine(
-                  Icons.fact_check_outlined,
-                  _boolValue(alerta, ['leida']) ? 'Leída' : 'Pendiente',
-                ),
-              ],
-            );
-          }),
-      ],
+    return _RecordListSection(
+      header: EnterpriseSectionHeader(
+        icon: Icons.notifications_active_outlined,
+        title: 'Alertas del sistema',
+        subtitle: '${_whole(_stat(stats, 'alertasActivas'))} activas',
+      ),
+      empty: const EnterpriseEmptyState(
+        icon: Icons.notifications_active_outlined,
+        title: 'Sin alertas visibles',
+        message: 'Las notificaciones críticas aparecerán aquí.',
+      ),
+      children: alertas.take(40).map((alerta) {
+        final severidad = _text(alerta, [
+          'severidad',
+          'tipo',
+        ], fallback: 'informativa');
+        final badge = EnterpriseStatusBadge(
+          label: severidad,
+          color: _stateColor(severidad),
+        );
+        final details = [
+          EnterpriseInfoLine(
+            Icons.sensors_outlined,
+            _text(alerta, [
+              'dispositivoId',
+              'destinatarioId',
+            ], fallback: 'Sin origen asociado'),
+          ),
+          EnterpriseInfoLine(
+            Icons.fact_check_outlined,
+            _boolValue(alerta, ['leida']) ? 'Leída' : 'Pendiente',
+          ),
+          EnterpriseInfoLine(
+            Icons.description_outlined,
+            _text(alerta, ['mensaje'], fallback: 'Sin descripción'),
+          ),
+        ];
+        return EnterpriseRecordCard(
+          icon: Icons.warning_amber_outlined,
+          color: _stateColor(severidad),
+          title: _text(alerta, ['titulo'], fallback: 'Alerta'),
+          subtitle: _text(alerta, ['mensaje'], fallback: 'Sin descripción'),
+          badge: badge,
+          details: details,
+          onTap: () => onOpen(
+            title: _text(alerta, ['titulo'], fallback: 'Alerta'),
+            subtitle: _text(alerta, ['mensaje'], fallback: 'Sin descripción'),
+            details: details,
+            badge: badge,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -599,50 +981,63 @@ class _AlertasSection extends StatelessWidget {
 class _SoporteSection extends StatelessWidget {
   final List<Map<String, dynamic>> tickets;
   final Map<String, dynamic> stats;
+  final OpenRecord onOpen;
 
-  const _SoporteSection({required this.tickets, required this.stats});
+  const _SoporteSection({
+    required this.tickets,
+    required this.stats,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SectionTitle(
-          icon: Icons.support_agent_outlined,
-          title: 'Soporte y Tickets',
-          subtitle:
-              '${_whole(_stat(stats, 'ticketsPendientes'))} pendientes reportados',
-        ),
-        const SizedBox(height: 12),
-        if (tickets.isEmpty)
-          const _EmptyState(
-            icon: Icons.support_agent_outlined,
-            title: 'Sin tickets recientes',
-            message: 'Las solicitudes de soporte aparecerán aquí.',
-          )
-        else
-          ...tickets.take(20).map((ticket) {
-            final estado = _text(ticket, ['estado'], fallback: 'abierto');
-            final prioridad = _text(ticket, ['prioridad'], fallback: 'normal');
-            return _RecordCard(
-              icon: Icons.confirmation_number_outlined,
-              color: _stateColor(prioridad),
-              title: _text(ticket, ['titulo'], fallback: 'Ticket'),
-              subtitle: _text(ticket, [
-                'numeroTicket',
-                'categoria',
-              ], fallback: 'Sin folio'),
-              badge: _StatusBadge(label: estado, color: _stateColor(estado)),
-              details: [
-                _InfoLine(Icons.flag_outlined, 'Prioridad $prioridad'),
-                _InfoLine(
-                  Icons.description_outlined,
-                  _text(ticket, ['descripcion'], fallback: 'Sin descripción'),
-                ),
-              ],
-            );
-          }),
-      ],
+    return _RecordListSection(
+      header: EnterpriseSectionHeader(
+        icon: Icons.support_agent_outlined,
+        title: 'Soporte y tickets',
+        subtitle:
+            '${_whole(_stat(stats, 'ticketsPendientes'))} pendientes reportados',
+      ),
+      empty: const EnterpriseEmptyState(
+        icon: Icons.support_agent_outlined,
+        title: 'Sin tickets recientes',
+        message: 'Las solicitudes de soporte aparecerán aquí.',
+      ),
+      children: tickets.take(40).map((ticket) {
+        final estado = _text(ticket, ['estado'], fallback: 'abierto');
+        final prioridad = _text(ticket, ['prioridad'], fallback: 'normal');
+        final badge = EnterpriseStatusBadge(
+          label: estado,
+          color: _stateColor(estado),
+        );
+        final details = [
+          EnterpriseInfoLine(Icons.flag_outlined, 'Prioridad $prioridad'),
+          EnterpriseInfoLine(
+            Icons.description_outlined,
+            _text(ticket, ['descripcion'], fallback: 'Sin descripción'),
+          ),
+        ];
+        return EnterpriseRecordCard(
+          icon: Icons.confirmation_number_outlined,
+          color: _stateColor(prioridad),
+          title: _text(ticket, ['titulo'], fallback: 'Ticket'),
+          subtitle: _text(ticket, [
+            'numeroTicket',
+            'categoria',
+          ], fallback: 'Sin folio'),
+          badge: badge,
+          details: details,
+          onTap: () => onOpen(
+            title: _text(ticket, ['titulo'], fallback: 'Ticket'),
+            subtitle: _text(ticket, [
+              'numeroTicket',
+              'categoria',
+            ], fallback: 'Sin folio'),
+            details: details,
+            badge: badge,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -663,33 +1058,33 @@ class _EstadisticasSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionTitle(
+        const EnterpriseSectionHeader(
           icon: Icons.bar_chart_outlined,
-          title: 'Estadísticas Avanzadas',
-          subtitle: 'Consumo, facturación y operación',
+          title: 'Datos operativos',
+          subtitle: 'Consumo, facturación y disponibilidad',
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _MetricGrid(
           children: [
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Consumo hoy',
               value: _formatKwh(_stat(stats, 'consumoHoy')),
               icon: Icons.today_outlined,
               color: AppColors.primary,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Consumo total',
               value: _formatKwh(_stat(stats, 'consumoTotal')),
               icon: Icons.bolt_outlined,
               color: AppColors.info,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Boletas pendientes',
               value: _whole(_stat(stats, 'boletasPendientes')),
               icon: Icons.receipt_long_outlined,
               color: AppColors.danger,
             ),
-            _MetricCard(
+            EnterpriseMetricCard(
               title: 'Tarifas cargadas',
               value: data.tarifas.length.toString(),
               icon: Icons.price_change_outlined,
@@ -723,55 +1118,61 @@ class _EstadisticasSection extends StatelessWidget {
 
 class _UsuariosSection extends StatelessWidget {
   final List<Map<String, dynamic>> usuarios;
+  final OpenRecord onOpen;
 
-  const _UsuariosSection({required this.usuarios});
+  const _UsuariosSection({required this.usuarios, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SectionTitle(
-          icon: Icons.manage_accounts_outlined,
-          title: 'Usuarios Empresa',
-          subtitle: '${usuarios.length} usuarios visibles',
-        ),
-        const SizedBox(height: 12),
-        if (usuarios.isEmpty)
-          const _EmptyState(
-            icon: Icons.manage_accounts_outlined,
-            title: 'Sin usuarios para mostrar',
-            message: 'Los usuarios internos aparecerán aquí.',
-          )
-        else
-          ...usuarios
-              .take(20)
-              .map(
-                (usuario) => _RecordCard(
-                  icon: Icons.account_circle_outlined,
-                  color: _activeColor(_boolValue(usuario, ['activo'])),
-                  title: _text(usuario, ['nombre'], fallback: 'Usuario'),
-                  subtitle: _text(usuario, [
-                    'email',
-                    'correo',
-                  ], fallback: 'Sin email'),
-                  badge: _StatusBadge(
-                    label: _text(usuario, ['role'], fallback: 'ROL'),
-                    color: AppColors.info,
-                  ),
-                  details: [
-                    _InfoLine(
-                      Icons.work_outline,
-                      _text(usuario, ['cargo'], fallback: 'Sin cargo'),
-                    ),
-                    _InfoLine(
-                      Icons.verified_user_outlined,
-                      _boolValue(usuario, ['activo']) ? 'Activo' : 'Inactivo',
-                    ),
-                  ],
-                ),
-              ),
-      ],
+    return _RecordListSection(
+      header: EnterpriseSectionHeader(
+        icon: Icons.manage_accounts_outlined,
+        title: 'Usuarios empresa',
+        subtitle: '${usuarios.length} usuarios visibles',
+      ),
+      empty: const EnterpriseEmptyState(
+        icon: Icons.manage_accounts_outlined,
+        title: 'Sin usuarios para mostrar',
+        message: 'Cambia la búsqueda o actualiza el panel.',
+      ),
+      children: usuarios.take(40).map((usuario) {
+        final active = _boolValue(usuario, ['activo']);
+        final badge = EnterpriseStatusBadge(
+          label: _text(usuario, ['role'], fallback: 'ROL'),
+          color: AppColors.info,
+        );
+        final details = [
+          EnterpriseInfoLine(
+            Icons.email_outlined,
+            _text(usuario, ['email', 'correo'], fallback: 'Sin email'),
+          ),
+          EnterpriseInfoLine(
+            Icons.work_outline,
+            _text(usuario, ['cargo'], fallback: 'Sin cargo'),
+          ),
+          EnterpriseInfoLine(
+            Icons.verified_user_outlined,
+            active ? 'Activo' : 'Inactivo',
+          ),
+        ];
+        return EnterpriseRecordCard(
+          icon: Icons.account_circle_outlined,
+          color: _activeColor(active),
+          title: _text(usuario, ['nombre'], fallback: 'Usuario'),
+          subtitle: _text(usuario, ['email', 'correo'], fallback: 'Sin email'),
+          badge: badge,
+          details: details,
+          onTap: () => onOpen(
+            title: _text(usuario, ['nombre'], fallback: 'Usuario'),
+            subtitle: _text(usuario, [
+              'email',
+              'correo',
+            ], fallback: 'Sin email'),
+            details: details,
+            badge: badge,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -784,6 +1185,7 @@ class _ConfiguracionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>().user;
+    final permissions = context.watch<UserProvider>().permissions;
     final healthStatus = _text(data.health, [
       'status',
       'estado',
@@ -792,51 +1194,80 @@ class _ConfiguracionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionTitle(
+        const EnterpriseSectionHeader(
           icon: Icons.tune_outlined,
-          title: 'Configuración',
-          subtitle: 'Empresa, backend y parámetros operativos',
+          title: 'Configuración operativa',
+          subtitle: 'Empresa, backend, permisos y parámetros',
         ),
-        const SizedBox(height: 12),
-        _RecordCard(
+        const SizedBox(height: 14),
+        EnterpriseRecordCard(
           icon: Icons.apartment_outlined,
           color: AppColors.primary,
           title: user?.nombre.isNotEmpty == true ? user!.nombre : 'Empresa',
           subtitle: user?.correo.isNotEmpty == true
               ? user!.correo
               : 'Correo no disponible',
-          badge: _StatusBadge(
+          badge: EnterpriseStatusBadge(
             label: user?.activo == false ? 'Inactiva' : 'Activa',
             color: user?.activo == false ? AppColors.danger : AppColors.success,
           ),
           details: [
-            _InfoLine(
+            EnterpriseInfoLine(
               Icons.badge_outlined,
               user?.role.isNotEmpty == true ? user!.role : 'Sin rol',
             ),
-            _InfoLine(Icons.security_outlined, 'Autenticación con token móvil'),
+            EnterpriseInfoLine(
+              Icons.security_outlined,
+              permissions.isEmpty
+                  ? 'Permisos no informados por sesión'
+                  : '${permissions.length} permisos cargados',
+            ),
           ],
         ),
-        _RecordCard(
+        EnterpriseRecordCard(
           icon: Icons.cloud_done_outlined,
           color: _stateColor(healthStatus),
           title: 'Estado del backend',
           subtitle: healthStatus,
-          badge: _StatusBadge(
+          badge: EnterpriseStatusBadge(
             label: healthStatus,
             color: _stateColor(healthStatus),
           ),
           details: [
-            _InfoLine(
+            EnterpriseInfoLine(
               Icons.storage_outlined,
               data.health.isEmpty ? 'Health privado no disponible' : 'API OK',
             ),
-            _InfoLine(
+            EnterpriseInfoLine(
               Icons.price_change_outlined,
               '${data.tarifas.length} tarifas cargadas',
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _RecordListSection extends StatelessWidget {
+  final EnterpriseSectionHeader header;
+  final EnterpriseEmptyState empty;
+  final List<Widget> children;
+
+  const _RecordListSection({
+    required this.header,
+    required this.empty,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        const SizedBox(height: 14),
+        if (children.isEmpty) empty else ...children,
       ],
     );
   }
@@ -849,46 +1280,38 @@ class _RecentActivity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <_InfoLine>[
-      _InfoLine(
+    final items = <EnterpriseInfoLine>[
+      EnterpriseInfoLine(
         Icons.person_add_alt_outlined,
         '${data.clientes.length} clientes cargados',
       ),
-      _InfoLine(
+      EnterpriseInfoLine(
         Icons.electrical_services,
         '${data.dispositivos.length} dispositivos visibles',
       ),
-      _InfoLine(
+      EnterpriseInfoLine(
         Icons.support_agent_outlined,
         '${data.tickets.length} tickets recientes',
       ),
-      _InfoLine(
+      EnterpriseInfoLine(
         Icons.notifications_active_outlined,
         '${data.alertas.length} alertas/notificaciones',
       ),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderColor(context)),
-      ),
+    return EnterpriseCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Actividad reciente',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
           ...items.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _InlineInfo(line: item),
+              child: EnterpriseInlineInfo(line: item),
             ),
           ),
         ],
@@ -906,89 +1329,18 @@ class _MetricGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 680;
+        final wide = constraints.maxWidth >= 760;
+        final medium = constraints.maxWidth >= 520;
         return GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: wide ? 4 : 2,
+          crossAxisCount: wide ? 4 : (medium ? 2 : 1),
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: wide ? 1.9 : 1.18,
+          childAspectRatio: wide ? 1.82 : (medium ? 1.55 : 2.7),
           children: children,
         );
       },
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _MetricCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: _borderColor(context)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
-                ),
-                const Spacer(),
-              ],
-            ),
-            const Spacer(),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                maxLines: 1,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.68),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1000,13 +1352,7 @@ class _OperationalSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderColor(context)),
-      ),
+    return EnterpriseCard(
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
@@ -1025,6 +1371,7 @@ class _SummaryRow {
   final String value;
   final Color color;
   final double progress;
+  final VoidCallback? onTap;
 
   const _SummaryRow({
     required this.icon,
@@ -1032,6 +1379,7 @@ class _SummaryRow {
     required this.value,
     required this.color,
     required this.progress,
+    this.onTap,
   });
 }
 
@@ -1042,7 +1390,7 @@ class _SummaryLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final content = Row(
       children: [
         Icon(row.icon, color: row.color, size: 22),
         const SizedBox(width: 12),
@@ -1058,7 +1406,7 @@ class _SummaryLine extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -1066,7 +1414,7 @@ class _SummaryLine extends StatelessWidget {
                   Text(
                     row.value,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
@@ -1086,254 +1434,15 @@ class _SummaryLine extends StatelessWidget {
         ),
       ],
     );
-  }
-}
 
-class _SectionTitle extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
+    if (row.onTap == null) return content;
 
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.68),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecordCard extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final _StatusBadge badge;
-  final List<_InfoLine> details;
-
-  const _RecordCard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.badge,
-    required this.details,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: _borderColor(context)),
-      ),
+    return InkWell(
+      onTap: row.onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color, size: 21),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.64),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                badge,
-              ],
-            ),
-            if (details.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ...details.map(
-                (line) => Padding(
-                  padding: const EdgeInsets.only(bottom: 7),
-                  child: _InlineInfo(line: line),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoLine {
-  final IconData icon;
-  final String text;
-
-  const _InfoLine(this.icon, this.text);
-}
-
-class _InlineInfo extends StatelessWidget {
-  final _InfoLine line;
-
-  const _InlineInfo({required this.line});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          line.icon,
-          size: 16,
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.56),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            line.text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.68),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _StatusBadge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.26)),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderColor(context)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 38, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.64),
-            ),
-          ),
-        ],
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: content,
       ),
     );
   }
@@ -1362,9 +1471,7 @@ class _DashboardError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -1377,10 +1484,6 @@ class _DashboardError extends StatelessWidget {
       ),
     );
   }
-}
-
-Color _borderColor(BuildContext context) {
-  return Theme.of(context).dividerColor.withValues(alpha: 0.36);
 }
 
 String _time(DateTime date) {
@@ -1451,7 +1554,7 @@ Color _stateColor(String state) {
       normalized.contains('medio') ||
       normalized.contains('warning') ||
       normalized.contains('abierto')) {
-    return AppColors.primary;
+    return AppColors.warning;
   }
   if (normalized.contains('activo') ||
       normalized.contains('ok') ||

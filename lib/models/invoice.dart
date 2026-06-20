@@ -101,8 +101,18 @@ class Invoice {
   String get formattedVencimiento {
     if (fechaVencimiento == null) return '';
     const months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
     return '${fechaVencimiento!.day} ${months[fechaVencimiento!.month - 1]}, ${fechaVencimiento!.year}';
   }

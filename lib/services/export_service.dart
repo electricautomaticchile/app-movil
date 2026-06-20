@@ -6,22 +6,27 @@ import 'consumo_service.dart';
 
 class ExportService {
   /// Export consumption history as CSV string and share
-  static Future<void> exportCSV(List<HistorialPunto> data, String clienteName) async {
+  static Future<void> exportCSV(
+    List<HistorialPunto> data,
+    String clienteName,
+  ) async {
     final buffer = StringBuffer();
     buffer.writeln('Periodo,Consumo (kWh),Costo (CLP)');
     for (final punto in data) {
-      buffer.writeln('${punto.periodo},${punto.energiaTotal.toStringAsFixed(2)},${punto.costoTotal.toStringAsFixed(0)}');
+      buffer.writeln(
+        '${punto.periodo},${punto.energiaTotal.toStringAsFixed(2)},${punto.costoTotal.toStringAsFixed(0)}',
+      );
     }
 
     final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-    await Printing.sharePdf(
-      bytes: bytes,
-      filename: 'consumo-$clienteName.csv',
-    );
+    await Printing.sharePdf(bytes: bytes, filename: 'consumo-$clienteName.csv');
   }
 
   /// Export consumption history as PDF and share
-  static Future<void> exportPDF(List<HistorialPunto> data, String clienteName) async {
+  static Future<void> exportPDF(
+    List<HistorialPunto> data,
+    String clienteName,
+  ) async {
     final font = await PdfGoogleFonts.nunitoRegular();
     final fontBold = await PdfGoogleFonts.nunitoBold();
     final pdf = pw.Document();
@@ -34,11 +39,19 @@ class ExportService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         build: (context) => [
-          pw.Text('Historial de Consumo',
-              style: pw.TextStyle(font: fontBold, fontSize: 20)),
+          pw.Text(
+            'Historial de Consumo',
+            style: pw.TextStyle(font: fontBold, fontSize: 20),
+          ),
           pw.SizedBox(height: 8),
-          pw.Text('Cliente: $clienteName',
-              style: pw.TextStyle(font: font, fontSize: 12, color: PdfColors.grey600)),
+          pw.Text(
+            'Cliente: $clienteName',
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 12,
+              color: PdfColors.grey600,
+            ),
+          ),
           pw.SizedBox(height: 20),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -56,11 +69,15 @@ class ExportService {
                   _cell('Costo', fontBold),
                 ],
               ),
-              ...data.map((p) => pw.TableRow(children: [
-                _cell(p.periodo, font),
-                _cell(p.energiaTotal.toStringAsFixed(2), font),
-                _cell('\$${p.costoTotal.toStringAsFixed(0)}', font),
-              ])),
+              ...data.map(
+                (p) => pw.TableRow(
+                  children: [
+                    _cell(p.periodo, font),
+                    _cell(p.energiaTotal.toStringAsFixed(2), font),
+                    _cell('\$${p.costoTotal.toStringAsFixed(0)}', font),
+                  ],
+                ),
+              ),
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey100),
                 children: [

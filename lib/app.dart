@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'main.dart' show navigatorKey;
 import 'theme/theme_provider.dart';
 import 'routes/app_routes.dart';
+import 'screens/session_gate_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/login_screen.dart';
 
@@ -40,9 +41,10 @@ class ElectricApp extends StatelessWidget {
           themeMode: themeProvider.themeMode,
 
           // Routes configuration
-          initialRoute: AppRoutes.login,
+          initialRoute: AppRoutes.startup,
           onGenerateRoute: (settings) {
             final routes = <String, WidgetBuilder>{
+              AppRoutes.startup: (context) => const SessionGateScreen(),
               AppRoutes.landing: (context) => const LandingScreen(),
               AppRoutes.login: (context) => const LoginScreen(),
               AppRoutes.empresaDashboard: (context) =>

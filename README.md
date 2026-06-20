@@ -1,15 +1,21 @@
 # ElectricAutomaticChile - App Movil
 
-Aplicacion Flutter para clientes de ElectricAutomaticChile. Permite revisar
-consumo, facturas, pagos, notificaciones, configuracion y ayuda desde Android e
-iOS.
+Aplicacion Flutter para ElectricAutomaticChile. El foco actual es el panel
+empresa: autenticacion con email corporativo, dashboard operativo, gestion de
+clientes, dispositivos, alertas, tickets, usuarios y configuracion. Mantiene
+pantallas cliente heredadas para consumo, boletas y control remoto.
 
-> Estado actual: la app usa datos simulados para validar experiencia y flujo de
-> pantallas. La integracion completa con el backend debe documentarse y probarse
-> cuando se conecten endpoints reales.
+> Estado actual: la app apunta por defecto al backend productivo de Render
+> `https://electric-backend-tpg9.onrender.com/api`. Los endpoints empresa ya se
+> consumen desde el backend; algunas pantallas cliente siguen siendo legacy o
+> dependen de endpoints especificos del usuario cliente.
 
 ## Funcionalidades
 
+- Login empresa con email y contraseña.
+- Restauracion de sesion con token y redireccion por rol.
+- Dashboard empresa con metricas, busqueda, filtros y detalle de registros.
+- Modo claro/oscuro/sistema con preferencia persistida.
 - Dashboard cliente con consumo actual, promedio diario y comparacion mensual.
 - Facturas por periodo, detalle y descarga de reportes.
 - Pagos, metodos de pago e historial.
@@ -64,6 +70,8 @@ flutter test
 
 Tests existentes:
 
+- `test/models/user_provider_test.dart`
+- `test/theme/theme_provider_test.dart`
 - `test/utils/client_number_formatter_test.dart`
 - `test/utils/rut_formatter_test.dart`
 
@@ -98,8 +106,11 @@ flutter build apk --release
 
 ## Pendiente antes de produccion
 
-- Reemplazar datos simulados por servicios reales del backend.
-- Agregar pruebas de widgets para login, dashboard, facturas y pagos.
+- Agregar pruebas de widgets para login, dashboard empresa, facturas y pagos.
+- Definir si la app final sera solo empresa o multi-rol empresa/cliente.
+- Completar acciones de escritura empresa cuando existan endpoints: crear
+  cliente, asignar dispositivo, resolver alerta, actualizar ticket e invitar
+  usuario.
 - Validar almacenamiento seguro de tokens.
 - Validar pinning/certificados contra dominios reales antes de activar
   `ENABLE_CERT_PINNING=true`.

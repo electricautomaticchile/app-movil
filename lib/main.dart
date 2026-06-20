@@ -26,7 +26,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()..loadThemeMode()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => InvoiceProvider()),
@@ -76,6 +76,7 @@ class _InactivityWrapperState extends State<InactivityWrapper>
 
   void _handleTimeout() async {
     await ApiService.clearTokens();
+    if (mounted) context.read<UserProvider>().clearUser();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       AppRoutes.login,
       (route) => false,

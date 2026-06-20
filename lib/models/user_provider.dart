@@ -3,13 +3,23 @@ import 'user_model.dart';
 
 class UserProvider extends ChangeNotifier {
   UserModel? _user;
+  Map<String, dynamic> _permissions = {};
 
   UserModel? get user => _user;
+  Map<String, dynamic> get permissions => Map.unmodifiable(_permissions);
   bool get isLoggedIn => _user != null;
 
-  void setUser(UserModel user) {
+  void setUser(UserModel user, {Map<String, dynamic>? permissions}) {
     _user = user;
+    _permissions = permissions ?? {};
     notifyListeners();
+  }
+
+  bool can(String permission) {
+    final value = _permissions[permission];
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    return true;
   }
 
   // M-02: Limpieza segura de datos sensibles
@@ -22,6 +32,7 @@ class UserProvider extends ChangeNotifier {
       _user!.rut = '';
     }
     _user = null;
+    _permissions = {};
     notifyListeners();
   }
 

@@ -73,7 +73,7 @@ class _ClientDashboardScreenState extends State<ClientDashboardScreen> {
     if (message == 'logout') {
       Navigator.pushNamedAndRemoveUntil(
         context,
-        AppRoutes.landing,
+        AppRoutes.login,
         (route) => false,
       );
       return;

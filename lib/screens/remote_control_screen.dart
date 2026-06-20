@@ -457,13 +457,14 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
               Expanded(
                 child: Text(
                   'Servicio suspendido por boletas impagas',
-                  style: (isDark
-                          ? AppTypography.bodyDark
-                          : AppTypography.bodyLight)
-                      .copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.danger,
-                  ),
+                  style:
+                      (isDark
+                              ? AppTypography.bodyDark
+                              : AppTypography.bodyLight)
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.danger,
+                          ),
                 ),
               ),
             ],
@@ -471,10 +472,11 @@ class _RemoteControlScreenState extends State<RemoteControlScreen>
           SizedBox(height: AppSpacing.sm),
           Text(
             'Paga tus boletas vencidas para restablecer el suministro automáticamente.',
-            style: (isDark
-                    ? AppTypography.bodySmallDark
-                    : AppTypography.bodySmallLight)
-                .copyWith(color: AppColors.danger.withValues(alpha: 0.8)),
+            style:
+                (isDark
+                        ? AppTypography.bodySmallDark
+                        : AppTypography.bodySmallLight)
+                    .copyWith(color: AppColors.danger.withValues(alpha: 0.8)),
           ),
           SizedBox(height: AppSpacing.md),
           SizedBox(

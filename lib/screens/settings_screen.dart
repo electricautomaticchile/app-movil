@@ -12,8 +12,8 @@ import '../models/user_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/settings_header.dart';
 import '../widgets/settings_section_title.dart';
-import '../widgets/settings_tile.dart';
 import '../widgets/settings_switch_tile.dart';
+import '../widgets/settings_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -64,16 +64,75 @@ class SettingsScreen extends StatelessWidget {
 
             // PERSONALIZA TU EXPERIENCIA
             const SettingsSectionTitle(title: 'PERSONALIZA TU EXPERIENCIA'),
-            SettingsSwitchTile(
-              icon: Icons.dark_mode_outlined,
-              title: 'Tema Oscuro',
-              subtitle: 'Ajustar a mi preferencia',
-              value: themeProvider.isDarkMode(context),
-              onChanged: (value) {
-                themeProvider.setThemeMode(
-                  value ? ThemeMode.dark : ThemeMode.light,
-                );
-              },
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.dark_mode_outlined,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.mutedForeground,
+                      ),
+                      SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tema de la app',
+                              style: isDark
+                                  ? AppTypography.bodyDark
+                                  : AppTypography.bodyLight,
+                            ),
+                            SizedBox(height: AppSpacing.xs),
+                            Text(
+                              'Sistema, claro u oscuro',
+                              style: isDark
+                                  ? AppTypography.bodySmallDark
+                                  : AppTypography.bodySmallLight,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          icon: Icon(Icons.settings_suggest_outlined),
+                          label: Text('Sistema'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Claro'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Oscuro'),
+                        ),
+                      ],
+                      selected: {themeProvider.themeMode},
+                      onSelectionChanged: (selection) {
+                        themeProvider.setThemeMode(selection.first);
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
             Divider(
               height: 1,
@@ -136,7 +195,7 @@ class SettingsScreen extends StatelessWidget {
                     context.read<UserProvider>().clearUser();
                     Navigator.pushNamedAndRemoveUntil(
                       context,
-                      AppRoutes.landing,
+                      AppRoutes.login,
                       (route) => false,
                     );
                   },

@@ -9,6 +9,7 @@ class EmpresaDashboardData {
   final List<Map<String, dynamic>> usuarios;
   final List<Map<String, dynamic>> tarifas;
   final Map<String, dynamic> health;
+  final List<String> failedModules;
   final DateTime fetchedAt;
 
   const EmpresaDashboardData({
@@ -20,6 +21,7 @@ class EmpresaDashboardData {
     required this.usuarios,
     required this.tarifas,
     required this.health,
+    this.failedModules = const [],
     required this.fetchedAt,
   });
 }
@@ -27,15 +29,46 @@ class EmpresaDashboardData {
 class EmpresaApiService {
   static Future<EmpresaDashboardData> loadDashboard() async {
     final stats = await getStats();
+    final failedModules = <String>[];
 
     final results = await Future.wait<dynamic>([
-      _safe(() => getClientes(limit: 30), <Map<String, dynamic>>[]),
-      _safe(() => getDispositivos(limit: 30), <Map<String, dynamic>>[]),
-      _safe(() => getAlertas(), <Map<String, dynamic>>[]),
-      _safe(() => getTickets(limit: 30), <Map<String, dynamic>>[]),
-      _safe(() => getUsuarios(limit: 30), <Map<String, dynamic>>[]),
-      _safe(() => getTarifas(limit: 30), <Map<String, dynamic>>[]),
-      _safe(getHealth, <String, dynamic>{}),
+      _safe(
+        'clientes',
+        () => getClientes(limit: 30),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe(
+        'dispositivos',
+        () => getDispositivos(limit: 30),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe(
+        'alertas',
+        () => getAlertas(),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe(
+        'soporte',
+        () => getTickets(limit: 30),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe(
+        'usuarios',
+        () => getUsuarios(limit: 30),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe(
+        'tarifas',
+        () => getTarifas(limit: 30),
+        <Map<String, dynamic>>[],
+        failedModules,
+      ),
+      _safe('health', getHealth, <String, dynamic>{}, failedModules),
     ]);
 
     return EmpresaDashboardData(
@@ -47,6 +80,7 @@ class EmpresaApiService {
       usuarios: List<Map<String, dynamic>>.from(results[4] as List),
       tarifas: List<Map<String, dynamic>>.from(results[5] as List),
       health: Map<String, dynamic>.from(results[6] as Map),
+      failedModules: failedModules,
       fetchedAt: DateTime.now(),
     );
   }
@@ -112,10 +146,16 @@ class EmpresaApiService {
     return _asMap(_unwrap(response.data));
   }
 
-  static Future<T> _safe<T>(Future<T> Function() loader, T fallback) async {
+  static Future<T> _safe<T>(
+    String module,
+    Future<T> Function() loader,
+    T fallback,
+    List<String> failedModules,
+  ) async {
     try {
       return await loader();
     } catch (_) {
+      failedModules.add(module);
       return fallback;
     }
   }
