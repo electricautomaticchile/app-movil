@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- FCM: requerido en Android 13+ (API 33) para mostrar notificaciones.
+         El permiso se solicita en runtime desde PushNotificationService. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Electricautomaticchile"
         android:name="${applicationName}"
@@ -28,6 +31,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- FCM: canal por defecto para notificaciones recibidas con la app en
+             background/terminated. Debe coincidir con el canal creado en
+             PushNotificationService (_defaultChannel). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="eac_default_channel" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

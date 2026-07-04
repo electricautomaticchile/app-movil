@@ -64,6 +64,14 @@ dependencies:
   # SHA-256 certificate pinning (C-01)
   crypto: ^3.0.6
 
+  # Push notifications - Firebase Cloud Messaging (FCM)
+  # Requiere google-services.json (Android) y GoogleService-Info.plist (iOS).
+  # Ver FIREBASE_SETUP.md para la configuración pendiente del fundador.
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.6
+  # Mostrar notificaciones cuando la app está en foreground
+  flutter_local_notifications: ^18.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

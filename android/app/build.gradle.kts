@@ -5,6 +5,12 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // FCM: activa el procesamiento de google-services.json para Firebase.
+    // >>> PENDIENTE DEL FUNDADOR <<<
+    // Este plugin FALLA el build hasta que exista android/app/google-services.json.
+    // Descárgalo desde la consola de Firebase y colócalo en android/app/.
+    // Ver FIREBASE_SETUP.md.
+    id("com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
@@ -45,7 +51,9 @@ android {
         applicationId = "com.electricautomaticchile.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // FCM requiere minSdk >= 21. Nos aseguramos de cumplirlo sin bajar el
+        // valor que ya use Flutter por defecto.
+        minSdk = maxOf(flutter.minSdkVersion, 21)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

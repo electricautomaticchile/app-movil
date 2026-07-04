@@ -9,10 +9,11 @@ import 'models/notification_provider.dart';
 import 'models/invoice_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/api_service.dart';
+import 'services/push_notification_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Redirigir al login empresa cuando el token expira
@@ -22,6 +23,14 @@ void main() {
       (route) => false,
     );
   };
+
+  // Notificaciones push (FCM). Al tocar una notificación, llevamos al usuario
+  // a la pantalla de notificaciones. Es seguro aunque falten los archivos de
+  // Firebase: initialize() captura el error y no bloquea el arranque.
+  PushNotificationService.instance.onNotificationTap = (data) {
+    navigatorKey.currentState?.pushNamed(AppRoutes.notifications);
+  };
+  await PushNotificationService.instance.initialize();
 
   runApp(
     MultiProvider(

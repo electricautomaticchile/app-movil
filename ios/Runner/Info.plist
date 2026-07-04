@@ -51,5 +51,33 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+
+	<!-- ============================================================= -->
+	<!-- FCM / Push notifications (iOS)                                -->
+	<!--                                                               -->
+	<!-- Background modes necesarios para recibir push y data messages -->
+	<!-- mientras la app está en background.                           -->
+	<!-- ============================================================= -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+
+	<!-- PENDIENTE DEL FUNDADOR (requiere cuenta Apple Developer de pago):
+	     1. En Xcode → Runner → Signing & Capabilities: agregar la capability
+	        "Push Notifications" y "Background Modes" (marcar Remote notifications).
+	        Esto genera/actualiza ios/Runner/Runner.entitlements con:
+	            aps-environment = development (o production)
+	     2. En el Apple Developer Portal: crear una APNs Authentication Key (.p8)
+	        y subirla en la consola de Firebase → Project Settings → Cloud Messaging
+	        (sección Apple app configuration).
+	     3. Colocar ios/Runner/GoogleService-Info.plist (descargado de Firebase).
+	     Ver FIREBASE_SETUP.md. -->
+
+	<!-- Opcional: si prefieres manejar el APNs token manualmente en AppDelegate,
+	     puedes desactivar el swizzling de Firebase con:
+	     <key>FirebaseAppDelegateProxyEnabled</key><false/>
+	     Por defecto lo dejamos activado (recomendado). -->
 </dict>
 </plist>

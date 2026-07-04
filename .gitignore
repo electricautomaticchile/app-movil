@@ -7,6 +7,12 @@ android/key.properties
 *.jks
 *.keystore
 
+# Firebase / FCM config (los agrega el fundador; ver FIREBASE_SETUP.md)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+# Service account de Firebase (secreto del backend, nunca commitear)
+**/firebase-service-account*.json
+
 # Flutter web
 web/flutter_service_worker.js
 web/flutter.js
